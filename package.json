@@ -1,0 +1,40 @@
+{
+  "name": "tts-video-sync-app",
+  "version": "1.0.0",
+  "description": "Desktop application for Text-to-Speech and Video Synchronization",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder"
+  },
+  "keywords": ["electron", "tts", "video", "sync"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.12.2",
+    "dotenv": "^17.2.3",
+    "express": "^4.21.1",
+    "fluent-ffmpeg": "^2.1.3"
+  },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
+  },
+  "build": {
+    "appId": "com.tts.videosync",
+    "productName": "TTS Video Sync",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": ["nsis"],
+      "icon": "assets/icon.ico"
+    },
+    "files": [
+      "**/*",
+      "!**/*.md",
+      "!node_modules/@electron",
+      "!dist"
+    ]
+  }
+}
