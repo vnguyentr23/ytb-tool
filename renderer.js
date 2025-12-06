@@ -67,12 +67,12 @@ function switchTab(tabName) {
   document.querySelectorAll('.tab-content').forEach(tab => {
     tab.classList.remove('active');
   });
-  
+
   // Remove active from all buttons
   document.querySelectorAll('.tab-button').forEach(btn => {
     btn.classList.remove('active');
   });
-  
+
   // Show selected tab
   document.getElementById(`${tabName}-tab`).classList.add('active');
   event.target.classList.add('active');
@@ -83,13 +83,13 @@ function switchTab(tabName) {
 function updateGenaiApiTypeInfo() {
   const apiType = document.getElementById('genai-api-type').value;
   const info = document.getElementById('genai-api-type-info');
-  
+
   if (apiType === 'labs') {
     info.textContent = 'Labs: voice_id chuẩn ElevenLabs';
   } else {
     info.textContent = 'Max: Custom voice ID (số)';
   }
-  
+
   // Update SRT checkbox visibility for GENAI
   updateMergeSrtVisibility('genai');
 }
@@ -98,7 +98,7 @@ function updateGenaiApiTypeInfo() {
 function updateAi33ApiTypeInfo() {
   const apiType = document.getElementById('ai33-api-type').value;
   const info = document.getElementById('ai33-api-type-info');
-  
+
   if (apiType === 'labs') {
     info.textContent = 'Labs: voice_id chuẩn ElevenLabs';
   } else {
@@ -113,7 +113,7 @@ function updateMergeSrtVisibility(provider) {
     const downloadSrt = document.getElementById('genai-download-srt').checked;
     const mergeSrtBtn = document.getElementById('genai-merge-srt-btn');
     const checkSrtBtn = document.getElementById('genai-check-srt-btn');
-    
+
     if (mergeSrtBtn) {
       mergeSrtBtn.style.display = (apiType === 'labs' && downloadSrt) ? 'inline-block' : 'none';
     }
@@ -127,7 +127,7 @@ function updateMergeSrtVisibility(provider) {
 function toggleConfig(provider) {
   const section = document.getElementById(`${provider}-config-section`);
   const toggle = document.getElementById(`${provider}-config-toggle`);
-  
+
   if (section.style.display === 'none') {
     section.style.display = 'grid';
     toggle.textContent = '▼';
@@ -141,7 +141,7 @@ function toggleConfig(provider) {
 function toggleSyncConfig() {
   const section = document.getElementById('sync-config-section');
   const toggle = document.getElementById('sync-config-toggle');
-  
+
   if (section.style.display === 'none') {
     section.style.display = 'grid';
     toggle.textContent = '▼';
@@ -195,7 +195,7 @@ async function startCallbackServer() {
   if (!ngrokUrl) {
     ngrokUrl = document.getElementById('ai33-ngrok-url')?.value.trim();
   }
-  
+
   if (!ngrokUrl) {
     alert('Please enter a valid Ngrok URL in either GENAI or AI33 tab');
     return;
@@ -251,7 +251,7 @@ let previewSentencesData = null;
 async function previewSentences(provider) {
   const textContent = document.getElementById(`${provider}-text-content`).value.trim();
   const language = document.getElementById(`${provider}-language`).value;
-  
+
   if (!textContent) {
     alert('Please enter some text first!');
     return;
@@ -260,7 +260,7 @@ async function previewSentences(provider) {
   try {
     // Split text into sentences
     const splitResult = await ipcRenderer.invoke('split-text', { text: textContent, language });
-    
+
     if (!splitResult.success) {
       alert('Failed to split text: ' + splitResult.error);
       return;
@@ -268,15 +268,15 @@ async function previewSentences(provider) {
 
     const sentences = splitResult.sentences;
     previewSentencesData = { sentences, language };
-    
+
     // Update preview info
     document.getElementById('preview-count').textContent = sentences.length;
     document.getElementById('preview-language').textContent = getLanguageName(language);
-    
+
     // Display sentences
     const listContainer = document.getElementById('preview-sentences-list');
     listContainer.innerHTML = '';
-    
+
     sentences.forEach((sentence, index) => {
       const item = document.createElement('div');
       item.className = 'sentence-item';
@@ -286,7 +286,7 @@ async function previewSentences(provider) {
       `;
       listContainer.appendChild(item);
     });
-    
+
     // Show modal
     document.getElementById('preview-sentences-modal').style.display = 'flex';
   } catch (error) {
@@ -300,11 +300,11 @@ function closePreviewModal() {
 
 function copySentencesToClipboard() {
   if (!previewSentencesData) return;
-  
+
   const text = previewSentencesData.sentences
     .map((s, i) => `${i + 1}. ${s}`)
     .join('\n\n');
-  
+
   navigator.clipboard.writeText(text).then(() => {
     alert(`Copied ${previewSentencesData.sentences.length} sentences to clipboard!`);
   }).catch(err => {
@@ -314,24 +314,24 @@ function copySentencesToClipboard() {
 
 async function exportSentencesToFile() {
   if (!previewSentencesData) return;
-  
+
   const outputDir = document.getElementById('output-dir').value.trim();
   if (!outputDir) {
     alert('Please select output directory first (in Settings tab)');
     return;
   }
-  
+
   try {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
     const filename = `sentences_${timestamp}.txt`;
     const filePath = require('path').join(outputDir, filename);
-    
+
     const content = previewSentencesData.sentences
       .map((s, i) => `${i + 1}. ${s}`)
       .join('\n\n');
-    
+
     const result = await ipcRenderer.invoke('write-file', { filePath, content });
-    
+
     if (result.success) {
       alert(`Sentences exported to:\n${filePath}`);
     } else {
@@ -449,7 +449,7 @@ async function startTTSProcessing(provider) {
   ttsCancelled[provider] = false;
   clearLog(`${provider}-log`);
   updateProgress(`${provider}-progress-bar`, 0);
-  
+
   // Show Stop button, hide Start button
   document.getElementById(`${provider}-start-btn`).style.display = 'none';
   document.getElementById(`${provider}-stop-btn`).style.display = 'inline-block';
@@ -460,7 +460,7 @@ async function startTTSProcessing(provider) {
     // Split text into sentences
     addLog(`${provider}-log`, `✂️ Splitting text into sentences (Language: ${language.toUpperCase()})...`, 'info');
     const splitResult = await ipcRenderer.invoke('split-text', { text: textContent, language });
-    
+
     if (!splitResult.success) {
       throw new Error('Failed to split text');
     }
@@ -503,7 +503,7 @@ async function startTTSProcessing(provider) {
         addLog(`${provider}-log`, `🌐 [${segmentNumber}] Calling ${provider.toUpperCase()} ${apiType.toUpperCase()} API...`, 'info');
 
         let taskResult;
-        
+
         if (provider === 'genai' && apiType === 'labs') {
           taskResult = await ipcRenderer.invoke('create-tts-task-labs', {
             text: sentence,
@@ -553,12 +553,12 @@ async function startTTSProcessing(provider) {
 
         if (downloadResult.success) {
           addLog(`${provider}-log`, `✅ [${segmentNumber}] SUCCESS - Downloaded (${(downloadResult.size / 1024).toFixed(1)} KB)`, 'success');
-          
+
           // Update progress immediately after each completion
           completedCount++;
           const progress = Math.round((completedCount / sentences.length) * 100);
           updateProgress(`${provider}-progress-bar`, progress);
-          
+
           return { success: true, segmentNumber, taskId: taskResult.taskId };
         } else {
           throw new Error('Download failed');
@@ -566,12 +566,12 @@ async function startTTSProcessing(provider) {
 
       } catch (error) {
         addLog(`${provider}-log`, `❌ [${segmentNumber}] Failed: ${error.message}`, 'error');
-        
+
         // Update progress even on failure
         completedCount++;
         const progress = Math.round((completedCount / sentences.length) * 100);
         updateProgress(`${provider}-progress-bar`, progress);
-        
+
         return { success: false, segmentNumber, error: error.message };
       }
     };
@@ -600,14 +600,14 @@ async function startTTSProcessing(provider) {
     addLog(`${provider}-log`, `✅ Processing complete!`, 'success');
     addLog(`${provider}-log`, `📊 Total: ${sentences.length} | Success: ${successful} | Failed: ${failed}`, 'info');
     addLog(`${provider}-log`, `📁 Output: ${outputDir}`, 'info');
-    
+
     // Save task IDs to cache for SRT retry (GENAI Labs only)
     if (provider === 'genai' && apiType === 'labs' && successful > 0) {
       const successfulResults = results.filter(r => r.success && r.taskId);
       if (successfulResults.length > 0) {
         try {
           const taskIdCachePath = path.join(outputDir, '.task_ids_cache.json');
-          
+
           // Read existing cache
           let existingCache = {};
           try {
@@ -618,24 +618,24 @@ async function startTTSProcessing(provider) {
           } catch (error) {
             // No existing cache
           }
-          
+
           // Update cache with new task IDs
           successfulResults.forEach(r => {
             existingCache[r.segmentNumber] = r.taskId;
           });
-          
+
           await ipcRenderer.invoke('write-file', {
             filePath: taskIdCachePath,
             content: JSON.stringify(existingCache, null, 2)
           });
-          
+
           addLog(`${provider}-log`, `💾 Saved ${successfulResults.length} task IDs for future SRT retry`, 'info');
         } catch (error) {
           addLog(`${provider}-log`, `⚠️ Failed to save task IDs: ${error.message}`, 'warning');
         }
       }
     }
-    
+
     // Process SRT files if enabled (GENAI Labs only)
     if (provider === 'genai' && apiType === 'labs' && successful > 0) {
       const downloadSrt = document.getElementById('genai-download-srt')?.checked;
@@ -648,15 +648,15 @@ async function startTTSProcessing(provider) {
       const failedNumbers = results.filter(r => !r.success).map(r => r.segmentNumber).join(', ');
       addLog(`${provider}-log`, `⚠️ Failed segments: ${failedNumbers}`, 'warning');
     }
-    
+
     // Auto-join MP3 files only if all files are successful (no failures)
     if (successful > 0 && failed === 0) {
       addLog(`${provider}-log`, '═══════════════════════════', 'info');
       addLog(`${provider}-log`, '🎵 Auto-joining MP3 files...', 'info');
-      
+
       try {
         const joinResult = await ipcRenderer.invoke('join-voices', { voicesDir: outputDir });
-        
+
         if (joinResult.success) {
           const { outputFile, stats } = joinResult;
           addLog(`${provider}-log`, `✅ MP3 files joined successfully!`, 'success');
@@ -671,17 +671,17 @@ async function startTTSProcessing(provider) {
     } else if (failed > 0) {
       addLog(`${provider}-log`, `🚫 Auto-join skipped: ${failed} file(s) failed. Fix failures and retry to enable auto-join.`, 'info');
     }
-    
+
     // Auto-merge SRT files only if enabled and all files are successful (GENAI Labs only)
     if (provider === 'genai' && apiType === 'labs' && successful > 0 && failed === 0) {
       const downloadSrt = document.getElementById('genai-download-srt')?.checked;
       if (downloadSrt) {
         addLog(`${provider}-log`, '═══════════════════════════', 'info');
         addLog(`${provider}-log`, '📋 Auto-merging SRT files...', 'info');
-        
+
         try {
           const mergeResult = await ipcRenderer.invoke('merge-srt-files', { outputDir });
-          
+
           if (mergeResult.success) {
             const { outputFile, stats } = mergeResult;
             const durationMinutes = (stats.totalDuration / 60).toFixed(1);
@@ -722,82 +722,82 @@ async function startTTSProcessing(provider) {
 async function processSrtFiles(results, apiKey, outputDir, provider) {
   addLog(`${provider}-log`, '═══════════════════════════', 'info');
   addLog(`${provider}-log`, '📋 Starting subtitle processing...', 'info');
-  
+
   const successfulResults = results.filter(r => r.success && r.taskId);
-  
+
   if (successfulResults.length === 0) {
     addLog(`${provider}-log`, '⚠️ No successful tasks found for subtitle processing', 'warning');
     return;
   }
-  
+
   addLog(`${provider}-log`, `📝 Processing subtitles for ${successfulResults.length} segments`, 'info');
-  
+
   // Create srts directory
   const srtsDir = path.join(outputDir, 'srts');
   addLog(`${provider}-log`, `📁 Ensuring SRT directory exists...`, 'info');
   await ipcRenderer.invoke('create-directory', srtsDir);
   addLog(`${provider}-log`, `✅ SRT directory ready: ${srtsDir}`, 'success');
-  
+
   try {
     // Phase 1: Request subtitles for all tasks
     addLog(`${provider}-log`, 'Phase 1: Requesting subtitles for all tasks...', 'info');
     const subtitleRequests = [];
-    
+
     for (const result of successfulResults) {
       try {
         const { taskId, segmentNumber } = result;
         addLog(`${provider}-log`, `Requesting subtitle for segment ${segmentNumber}...`, 'info');
-        
+
         const requestResult = await ipcRenderer.invoke('request-subtitle', {
           taskId,
           apiKey
         });
-        
+
         subtitleRequests.push({
           taskId,
           segmentNumber,
           requested: requestResult.success
         });
-        
+
         // Delay to avoid rate limiting
         await new Promise(resolve => setTimeout(resolve, 2000));
       } catch (error) {
         addLog(`${provider}-log`, `❌ Failed to request subtitle for segment ${result.segmentNumber}: ${error.message}`, 'error');
       }
     }
-    
+
     // Wait 30 seconds for subtitle generation
     addLog(`${provider}-log`, '⏳ Waiting 30 seconds for subtitle generation...', 'info');
     await new Promise(resolve => setTimeout(resolve, 30000));
-    
+
     // Phase 2: Download SRT files
     addLog(`${provider}-log`, 'Phase 2: Downloading SRT files...', 'info');
     let srtDownloaded = 0;
     let srtFailed = 0;
-    
+
     for (const request of subtitleRequests) {
       if (!request.requested) {
         addLog(`${provider}-log`, `⏭️ Skipping segment ${request.segmentNumber} - subtitle request failed`, 'warning');
         srtFailed++;
         continue;
       }
-      
+
       try {
         addLog(`${provider}-log`, `[${request.segmentNumber}] Getting subtitle URL...`, 'info');
-        
+
         const detailsResult = await ipcRenderer.invoke('get-task-details', {
           taskId: request.taskId,
           apiKey
         });
-        
+
         if (detailsResult.success && detailsResult.subtitleUrl) {
           const srtPath = path.join(srtsDir, `${request.segmentNumber}.srt`);
-          
+
           const downloadResult = await ipcRenderer.invoke('download-srt', {
             url: detailsResult.subtitleUrl,
             outputPath: srtPath
           });
-          
+
           if (downloadResult.success) {
             addLog(`${provider}-log`, `✅ [${request.segmentNumber}] SRT downloaded (${(downloadResult.size / 1024).toFixed(1)} KB)`, 'success');
             srtDownloaded++;
@@ -809,7 +809,7 @@ async function processSrtFiles(results, apiKey, outputDir, provider) {
           addLog(`${provider}-log`, `⚠️ [${request.segmentNumber}] No subtitle URL available`, 'warning');
           srtFailed++;
         }
-        
+
         // Delay to avoid rate limiting
         await new Promise(resolve => setTimeout(resolve, 2000));
       } catch (error) {
@@ -817,12 +817,12 @@ async function processSrtFiles(results, apiKey, outputDir, provider) {
         srtFailed++;
       }
     }
-    
+
     addLog(`${provider}-log`, '═══════════════════════════', 'info');
     addLog(`${provider}-log`, `✅ Subtitle processing complete!`, 'success');
     addLog(`${provider}-log`, `📊 Total: ${subtitleRequests.length} | Downloaded: ${srtDownloaded} | Failed: ${srtFailed}`, 'info');
     addLog(`${provider}-log`, `📁 SRT Output: ${srtsDir}`, 'info');
-    
+
     if (srtFailed > 0) {
       addLog(`${provider}-log`, `⚠️ ${srtFailed} SRT files failed to download. You can retry using "Check Missing Files" → "Retry Missing Files"`, 'warning');
     }
@@ -836,11 +836,11 @@ function stopTTSProcessing(provider) {
   if (!ttsProcessing[provider]) {
     return;
   }
-  
+
   if (confirm('Are you sure you want to stop TTS processing?\n\nCurrent batch will complete before stopping.')) {
     ttsCancelled[provider] = true;
     addLog(`${provider}-log`, '🛑 Stopping TTS processing...', 'info');
-    
+
     // Disable stop button
     const stopBtn = document.getElementById(`${provider}-stop-btn`);
     stopBtn.disabled = true;
@@ -1022,7 +1022,7 @@ function displayMissingFilesReport(result, provider) {
 
   // Build summary
   let summaryHTML = '';
-  
+
   // Only show total if we checked MP3
   if (result.mp3) {
     summaryHTML += `
@@ -1096,33 +1096,46 @@ function displayMissingFilesReport(result, provider) {
 
   const mp3AllGood = !result.mp3 || result.mp3.missing === 0;
   const srtAllGood = !result.srt || result.srt.missing === 0;
-  
+
   if (mp3AllGood && srtAllGood) {
     detailsHTML = '<p style="text-align: center; color: #28a745; font-weight: 600;">🎉 All files are present! No missing files found.</p>';
   }
 
   detailsDiv.innerHTML = detailsHTML;
   section.style.display = 'block';
-  
+
   // Show appropriate retry buttons
   const retryMp3Btn = document.getElementById(`${provider}-retry-mp3-btn`);
   const retrySrtBtn = document.getElementById(`${provider}-retry-srt-btn`);
-  
+
+  console.log(`[${provider}] Retry button check:`, {
+    retryMp3Btn: !!retryMp3Btn,
+    retrySrtBtn: !!retrySrtBtn,
+    mp3Missing: result.mp3?.missing,
+    srtMissing: result.srt?.missing
+  });
+
   if (retryMp3Btn) {
     if (result.mp3 && result.mp3.missing > 0) {
       retryMp3Btn.style.display = 'inline-block';
+      console.log(`[${provider}] Showing retry MP3 button - ${result.mp3.missing} files missing`);
     } else {
       retryMp3Btn.style.display = 'none';
+      console.log(`[${provider}] Hiding retry MP3 button - no missing files`);
     }
+  } else {
+    console.error(`[${provider}] Retry MP3 button element not found!`);
   }
-  
+
   // Only show SRT retry button for GENAI Labs with SRT enabled
   if (retrySrtBtn) {
     const downloadSrt = provider === 'genai' && document.getElementById('genai-download-srt')?.checked;
     if (downloadSrt && result.srt && result.srt.missing > 0) {
       retrySrtBtn.style.display = 'inline-block';
+      console.log(`[${provider}] Showing retry SRT button - ${result.srt.missing} files missing`);
     } else {
       retrySrtBtn.style.display = 'none';
+      console.log(`[${provider}] Hiding retry SRT button`);
     }
   }
 }
@@ -1131,13 +1144,13 @@ function displayMissingFilesReport(result, provider) {
 async function mergeSrtFiles(provider) {
   // Ask user to select SRT directory
   const result = await ipcRenderer.invoke('select-directory');
-  
+
   if (!result) {
     return;
   }
-  
+
   const srtsDir = result;
-  
+
   if (!confirm(`Merge all SRT files in:\n${srtsDir}\n\nThis will create a single merged SRT file. Continue?`)) {
     return;
   }
@@ -1151,14 +1164,14 @@ async function mergeSrtFiles(provider) {
     if (mergeResult.success) {
       const { outputFile, stats } = mergeResult;
       const durationMinutes = (stats.totalDuration / 60).toFixed(1);
-      
+
       addLog(`${provider}-log`, '✅ SRT files merged successfully!', 'success');
       addLog(`${provider}-log`, `📄 Output file: ${outputFile}`, 'info');
       addLog(`${provider}-log`, `📊 Files processed: ${stats.filesProcessed}`, 'info');
       addLog(`${provider}-log`, `📝 Total subtitles: ${stats.totalSubtitles}`, 'info');
       addLog(`${provider}-log`, `⏱️  Total duration: ${durationMinutes} minutes (${stats.totalDuration.toFixed(1)}s)`, 'info');
       addLog(`${provider}-log`, `🔢 File numbers: ${stats.fileNumbers.join(', ')}`, 'info');
-      
+
       alert(`SRT files merged successfully!\n\nOutput: ${outputFile}\nProcessed: ${stats.filesProcessed} files\nSubtitles: ${stats.totalSubtitles}\nDuration: ${durationMinutes} minutes`);
     } else {
       addLog(`${provider}-log`, `❌ Failed to merge SRT files: ${mergeResult.error}`, 'error');
@@ -1174,13 +1187,13 @@ async function mergeSrtFiles(provider) {
 async function joinVoices(provider) {
   // Ask user to select voices directory
   const result = await ipcRenderer.invoke('select-directory');
-  
+
   if (!result) {
     return;
   }
-  
+
   const voicesDir = result;
-  
+
   if (!confirm(`Join all MP3 files in:\n${voicesDir}\n\nThis will create a single joined MP3 file. Continue?`)) {
     return;
   }
@@ -1193,7 +1206,7 @@ async function joinVoices(provider) {
 
     if (joinResult.success) {
       const { outputFile, stats } = joinResult;
-      
+
       addLog(`${provider}-log`, '✅ Voices joined successfully!', 'success');
       addLog(`${provider}-log`, `📄 Output file: ${outputFile}`, 'info');
       addLog(`${provider}-log`, `📊 Files joined: ${stats.filesJoined}`, 'info');
@@ -1201,7 +1214,7 @@ async function joinVoices(provider) {
       if (stats.method) {
         addLog(`${provider}-log`, `🔧 Method: ${stats.method}`, 'info');
       }
-      
+
       alert(`Voices joined successfully!\n\nOutput: ${outputFile}\nFiles joined: ${stats.filesJoined}`);
     } else {
       addLog(`${provider}-log`, `❌ Failed to join voices: ${joinResult.error}`, 'error');
@@ -1215,8 +1228,12 @@ async function joinVoices(provider) {
 
 // Retry missing MP3 files
 async function retryMissingVoices(provider) {
+  console.log(`[${provider}] retryMissingVoices called`);
+  console.log(`[${provider}] missingFilesData:`, missingFilesData);
+
   if (!missingFilesData) {
-    alert('No missing files data available. Please run "Check Missing Files" first.');
+    const msg = `No missing files data available.\n\nPlease follow these steps:\n1. Enter text in the text area\n2. Click "Check Missing MP3" button\n3. Then click "Retry Missing Voices" button`;
+    alert(msg);
     return;
   }
 
@@ -1226,14 +1243,16 @@ async function retryMissingVoices(provider) {
   }
 
   const { result } = missingFilesData;
-  
+  console.log(`[${provider}] result:`, result);
+
   // Check if MP3 data exists (might be null if only SRT was checked)
   if (!result.mp3) {
     alert('No MP3 check data available. Please run "Check Missing MP3" first.');
     return;
   }
-  
+
   const hasMissingMp3 = result.mp3.missing > 0;
+  console.log(`[${provider}] hasMissingMp3:`, hasMissingMp3, 'missing count:', result.mp3.missing);
 
   if (!hasMissingMp3) {
     alert('No missing MP3 files to retry!');
@@ -1241,8 +1260,11 @@ async function retryMissingVoices(provider) {
   }
 
   if (!confirm(`This will retry generating ${result.mp3.missing} missing MP3 files. Continue?`)) {
+    console.log(`[${provider}] User cancelled retry`);
     return;
   }
+
+  console.log(`[${provider}] User confirmed retry, proceeding...`);
 
   // Hide missing files section
   hideMissingFilesSection(provider);
@@ -1255,28 +1277,38 @@ async function retryMissingVoices(provider) {
   const apiType = document.getElementById(`${provider}-api-type`).value;
   const { outputDir } = missingFilesData;
 
+  console.log(`[${provider}] Retry config:`, { apiKey: apiKey ? 'SET' : 'NOT SET', voiceId, model, ngrokUrl, apiType, outputDir });
+
   if (!serverRunning) {
+    console.error(`[${provider}] Server not running!`);
     alert('Please start the callback server first');
     return;
   }
+
+  console.log(`[${provider}] Server is running, starting retry process...`);
 
   ttsProcessing[provider] = true;
   clearLog(`${provider}-log`);
   updateProgress(`${provider}-progress-bar`, 0);
 
+  console.log(`[${provider}] Set ttsProcessing to true, cleared log, reset progress`);
+
   try {
     addLog(`${provider}-log`, '═══════════════════════════', 'info');
     addLog(`${provider}-log`, '🔄 Retrying missing MP3 files...', 'info');
     addLog(`${provider}-log`, '═══════════════════════════', 'info');
-    
+
     // Ensure output directory exists
     await ipcRenderer.invoke('create-directory', outputDir);
-    
+    console.log(`[${provider}] Output directory created/verified`);
+
     // Get only missing segments
     const missingSegments = result.mp3.missingList.map(item => ({
       segmentNumber: item.segmentNumber,
       text: item.text
     }));
+
+    console.log(`[${provider}] Missing segments:`, missingSegments);
 
     addLog(`${provider}-log`, `📝 Found ${missingSegments.length} missing MP3 segments`, 'info');
     addLog(`${provider}-log`, `⚡ Processing with concurrency: ${settings.batchSize}`, 'info');
@@ -1287,16 +1319,21 @@ async function retryMissingVoices(provider) {
     const batchSize = settings.batchSize;
     let completedCount = 0;
 
+    console.log(`[${provider}] Starting batch processing with batchSize: ${batchSize}`);
+
     for (let batchStart = 0; batchStart < missingSegments.length; batchStart += batchSize) {
       const batchEnd = Math.min(batchStart + batchSize, missingSegments.length);
       const batch = missingSegments.slice(batchStart, batchEnd);
       const batchNumber = Math.floor(batchStart / batchSize) + 1;
       const totalBatches = Math.ceil(missingSegments.length / batchSize);
 
+      console.log(`[${provider}] Processing batch ${batchNumber}/${totalBatches}:`, batch.map(s => s.segmentNumber));
       addLog(`${provider}-log`, `📦 Processing batch ${batchNumber}/${totalBatches} (${batch.length} segments)`, 'info');
 
       const batchPromises = batch.map(async (segment) => {
         const { segmentNumber, text } = segment;
+
+        console.log(`[${provider}] Starting segment ${segmentNumber}`);
 
         try {
           addLog(`${provider}-log`, `🔄 [${segmentNumber}] RETRY - Creating new TTS task...`, 'info');
@@ -1309,34 +1346,41 @@ async function retryMissingVoices(provider) {
             callbackUrl: ngrokUrl
           };
 
+          console.log(`[${provider}] [${segmentNumber}] Calling API with config:`, { ...config, apiKey: config.apiKey ? 'SET' : 'NOT SET' });
           addLog(`${provider}-log`, `🌐 [${segmentNumber}] Calling ${provider.toUpperCase()} ${apiType.toUpperCase()} API...`, 'info');
 
           let taskResult;
           if (provider === 'genai' && apiType === 'labs') {
+            console.log(`[${provider}] [${segmentNumber}] Invoking create-tts-task-labs`);
             taskResult = await ipcRenderer.invoke('create-tts-task-labs', {
               text,
               segmentNumber,
               config
             });
           } else if (provider === 'genai' && apiType === 'max') {
+            console.log(`[${provider}] [${segmentNumber}] Invoking create-tts-task-max`);
             taskResult = await ipcRenderer.invoke('create-tts-task-max', {
               text,
               segmentNumber,
               config
             });
           } else if (provider === 'ai33' && apiType === 'labs') {
+            console.log(`[${provider}] [${segmentNumber}] Invoking create-tts-task-ai33-labs`);
             taskResult = await ipcRenderer.invoke('create-tts-task-ai33-labs', {
               text,
               segmentNumber,
               config
             });
           } else if (provider === 'ai33' && apiType === 'max') {
+            console.log(`[${provider}] [${segmentNumber}] Invoking create-tts-task-ai33-max`);
             taskResult = await ipcRenderer.invoke('create-tts-task-ai33-max', {
               text,
               segmentNumber,
               config
             });
           }
+
+          console.log(`[${provider}] [${segmentNumber}] API result:`, taskResult);
 
           if (!taskResult.success) {
             throw new Error(taskResult.error);
@@ -1359,12 +1403,12 @@ async function retryMissingVoices(provider) {
 
           if (downloadResult.success) {
             addLog(`${provider}-log`, `✅ [${segmentNumber}] RETRY SUCCESS - Downloaded (${(downloadResult.size / 1024).toFixed(1)} KB)`, 'success');
-            
+
             // Update progress immediately
             completedCount++;
             const progress = Math.round((completedCount / missingSegments.length) * 100);
             updateProgress(`${provider}-progress-bar`, progress);
-            
+
             return { success: true, segmentNumber, taskId: taskResult.taskId };
           } else {
             throw new Error('Download failed');
@@ -1372,12 +1416,12 @@ async function retryMissingVoices(provider) {
 
         } catch (error) {
           addLog(`${provider}-log`, `❌ [${segmentNumber}] RETRY FAILED: ${error.message}`, 'error');
-          
+
           // Update progress even on failure
           completedCount++;
           const progress = Math.round((completedCount / missingSegments.length) * 100);
           updateProgress(`${provider}-progress-bar`, progress);
-          
+
           return { success: false, segmentNumber, error: error.message };
         }
       });
@@ -1400,25 +1444,25 @@ async function retryMissingVoices(provider) {
       const failedNumbers = results.filter(r => !r.success).map(r => r.segmentNumber).join(', ');
       addLog(`${provider}-log`, `⚠️ Failed segments: ${failedNumbers}`, 'warning');
     }
-    
+
     // Auto-join MP3 files only if all retry attempts are successful
     if (successful > 0 && failed === 0) {
       // Check if there are any other missing MP3 files in the directory
       addLog(`${provider}-log`, '═══════════════════════════', 'info');
       addLog(`${provider}-log`, '🔍 Verifying all MP3 files are present...', 'info');
-      
+
       try {
         const { sentences } = missingFilesData;
         const verifyResult = await ipcRenderer.invoke('check-missing-files', {
           sentences,
           outputDir
         });
-        
+
         if (verifyResult.success && verifyResult.mp3.missing === 0) {
           addLog(`${provider}-log`, '✅ All MP3 files are present. Auto-joining...', 'info');
-          
+
           const joinResult = await ipcRenderer.invoke('join-voices', { voicesDir: outputDir });
-          
+
           if (joinResult.success) {
             const { outputFile, stats } = joinResult;
             addLog(`${provider}-log`, `✅ MP3 files joined successfully!`, 'success');
@@ -1436,13 +1480,13 @@ async function retryMissingVoices(provider) {
     } else if (failed > 0) {
       addLog(`${provider}-log`, `🚫 Auto-join skipped: ${failed} retry attempt(s) failed. Fix failures to enable auto-join.`, 'info');
     }
-    
+
     // Save task IDs to cache for SRT retry
     const successfulResults = results.filter(r => r.success && r.taskId);
     if (successfulResults.length > 0) {
       try {
         const taskIdCachePath = path.join(outputDir, '.task_ids_cache.json');
-        
+
         // Read existing cache
         let existingCache = {};
         try {
@@ -1453,17 +1497,17 @@ async function retryMissingVoices(provider) {
         } catch (error) {
           // No existing cache
         }
-        
+
         // Update cache with new task IDs
         successfulResults.forEach(r => {
           existingCache[r.segmentNumber] = r.taskId;
         });
-        
+
         await ipcRenderer.invoke('write-file', {
           filePath: taskIdCachePath,
           content: JSON.stringify(existingCache, null, 2)
         });
-        
+
         addLog(`${provider}-log`, `💾 Saved ${successfulResults.length} task IDs for future SRT retry`, 'info');
       } catch (error) {
         addLog(`${provider}-log`, `⚠️ Failed to save task IDs: ${error.message}`, 'warning');
@@ -1498,9 +1542,9 @@ async function retryMissingSrt(provider) {
     alert('No missing SRT files to retry!');
     return;
   }
-  
+
   const apiType = document.getElementById(`${provider}-api-type`).value;
-  
+
   if (provider !== 'genai' || apiType !== 'labs') {
     alert('SRT download is only available for GENAI Labs API!');
     return;
@@ -1529,32 +1573,32 @@ async function retryMissingSrt(provider) {
     addLog(`${provider}-log`, '═══════════════════════════', 'info');
     addLog(`${provider}-log`, '🔄 Retrying missing SRT files...', 'info');
     addLog(`${provider}-log`, '═══════════════════════════', 'info');
-    
+
     const missingSrtSegments = result.srt.missingList;
     addLog(`${provider}-log`, `📝 Found ${missingSrtSegments.length} missing SRT files`, 'info');
     addLog(`${provider}-log`, `📁 Output directory: ${outputDir}`, 'info');
-    
+
     // Create srts directory
     const srtsDir = path.join(outputDir, 'srts');
     await ipcRenderer.invoke('create-directory', srtsDir);
-    
+
     // Check if we have taskIds stored (from recent TTS generation)
     // For now, we need to inform user that SRT can only be retried if MP3 was just generated
     addLog(`${provider}-log`, '⚠️ Note: SRT retry requires corresponding MP3 files and recent task IDs', 'warning');
     addLog(`${provider}-log`, '💡 Tip: If SRT is missing, try running "Retry Missing Voices" first to get new task IDs', 'info');
-    
+
     let srtDownloaded = 0;
     let srtFailed = 0;
     let srtSkipped = 0;
-    
+
     // We need taskIds - check if there's a way to retrieve them
     // For segments with existing MP3, we can't get taskId unless we store it
     addLog(`${provider}-log`, '🔍 Checking for available task IDs...', 'info');
-    
+
     // Read task IDs from a potential cache file (we'll need to implement this)
     const taskIdCachePath = path.join(outputDir, '.task_ids_cache.json');
     let taskIdMap = new Map();
-    
+
     try {
       const cacheResult = await ipcRenderer.invoke('read-file', taskIdCachePath);
       if (cacheResult.success) {
@@ -1565,17 +1609,17 @@ async function retryMissingSrt(provider) {
     } catch (error) {
       addLog(`${provider}-log`, '⚠️ No task ID cache found. SRT retry may fail.', 'warning');
     }
-    
+
     let processedCount = 0;
-    
+
     // Phase 1: Request subtitles
     addLog(`${provider}-log`, 'Phase 1: Requesting subtitles...', 'info');
     const subtitleRequests = [];
-    
+
     for (const item of missingSrtSegments) {
       const { segmentNumber } = item;
       const taskId = taskIdMap.get(segmentNumber.toString());
-      
+
       if (!taskId) {
         addLog(`${provider}-log`, `⏭️ [${segmentNumber}] Skipping - no taskId available`, 'warning');
         srtSkipped++;
@@ -1583,28 +1627,28 @@ async function retryMissingSrt(provider) {
         updateProgress(`${provider}-progress-bar`, Math.round((processedCount / missingSrtSegments.length) * 50));
         continue;
       }
-      
+
       try {
         addLog(`${provider}-log`, `🔄 [${segmentNumber}] RETRY SRT - Requesting subtitle from task: ${taskId}`, 'info');
-        
+
         const requestResult = await ipcRenderer.invoke('request-subtitle', {
           taskId,
           apiKey
         });
-        
+
         if (requestResult.success) {
           addLog(`${provider}-log`, `✅ [${segmentNumber}] Subtitle request sent successfully`, 'success');
         }
-        
+
         subtitleRequests.push({
           taskId,
           segmentNumber,
           requested: requestResult.success
         });
-        
+
         processedCount++;
         updateProgress(`${provider}-progress-bar`, Math.round((processedCount / missingSrtSegments.length) * 50));
-        
+
         await new Promise(resolve => setTimeout(resolve, 2000));
       } catch (error) {
         addLog(`${provider}-log`, `❌ [${segmentNumber}] Failed to request subtitle: ${error.message}`, 'error');
@@ -1613,19 +1657,19 @@ async function retryMissingSrt(provider) {
         updateProgress(`${provider}-progress-bar`, Math.round((processedCount / missingSrtSegments.length) * 50));
       }
     }
-    
+
     if (subtitleRequests.length === 0) {
       throw new Error('No SRT requests could be made. Please retry MP3 generation first to obtain task IDs.');
     }
-    
+
     // Wait 30 seconds
     addLog(`${provider}-log`, '⏳ Waiting 30 seconds for subtitle generation...', 'info');
     await new Promise(resolve => setTimeout(resolve, 30000));
-    
+
     // Phase 2: Download SRT files
     addLog(`${provider}-log`, 'Phase 2: Downloading SRT files...', 'info');
     processedCount = 0;
-    
+
     for (const request of subtitleRequests) {
       if (!request.requested) {
         srtFailed++;
@@ -1633,25 +1677,25 @@ async function retryMissingSrt(provider) {
         updateProgress(`${provider}-progress-bar`, 50 + Math.round((processedCount / subtitleRequests.length) * 50));
         continue;
       }
-      
+
       try {
         addLog(`${provider}-log`, `🔍 [${request.segmentNumber}] Getting subtitle URL from task: ${request.taskId}`, 'info');
-        
+
         const detailsResult = await ipcRenderer.invoke('get-task-details', {
           taskId: request.taskId,
           apiKey
         });
-        
+
         if (detailsResult.success && detailsResult.subtitleUrl) {
           const srtPath = path.join(srtsDir, `${request.segmentNumber}.srt`);
-          
+
           addLog(`${provider}-log`, `📥 [${request.segmentNumber}] Downloading SRT file...`, 'info');
-          
+
           const downloadResult = await ipcRenderer.invoke('download-srt', {
             url: detailsResult.subtitleUrl,
             outputPath: srtPath
           });
-          
+
           if (downloadResult.success) {
             addLog(`${provider}-log`, `✅ [${request.segmentNumber}] SRT RETRY SUCCESS - Downloaded (${(downloadResult.size / 1024).toFixed(1)} KB)`, 'success');
             srtDownloaded++;
@@ -1663,10 +1707,10 @@ async function retryMissingSrt(provider) {
           addLog(`${provider}-log`, `❌ [${request.segmentNumber}] No subtitle URL found`, 'error');
           srtFailed++;
         }
-        
+
         processedCount++;
         updateProgress(`${provider}-progress-bar`, 50 + Math.round((processedCount / subtitleRequests.length) * 50));
-        
+
         await new Promise(resolve => setTimeout(resolve, 1000));
       } catch (error) {
         addLog(`${provider}-log`, `❌ [${request.segmentNumber}] SRT download error: ${error.message}`, 'error');
@@ -1675,34 +1719,34 @@ async function retryMissingSrt(provider) {
         updateProgress(`${provider}-progress-bar`, 50 + Math.round((processedCount / subtitleRequests.length) * 50));
       }
     }
-    
+
     // Summary
     addLog(`${provider}-log`, '═══════════════════════════', 'info');
     addLog(`${provider}-log`, `✅ SRT retry complete!`, 'success');
     addLog(`${provider}-log`, `📊 Total: ${missingSrtSegments.length} | Downloaded: ${srtDownloaded} | Failed: ${srtFailed} | Skipped: ${srtSkipped}`, 'info');
-    
+
     if (srtSkipped > 0) {
       addLog(`${provider}-log`, `💡 ${srtSkipped} files skipped due to missing task IDs. Run "Retry Missing Voices" first.`, 'warning');
     }
-    
+
     // Auto-merge SRT files only if all retry attempts are successful and no files are skipped
     if (srtDownloaded > 0 && srtFailed === 0 && srtSkipped === 0) {
       // Verify all SRT files are present
       addLog(`${provider}-log`, '═══════════════════════════', 'info');
       addLog(`${provider}-log`, '🔍 Verifying all SRT files are present...', 'info');
-      
+
       try {
         const { sentences } = missingFilesData;
         const verifyResult = await ipcRenderer.invoke('check-missing-srt', {
           sentences,
           outputDir
         });
-        
+
         if (verifyResult.success && verifyResult.srt.missing === 0) {
           addLog(`${provider}-log`, '✅ All SRT files are present. Auto-merging...', 'info');
-          
+
           const mergeResult = await ipcRenderer.invoke('merge-srt-files', { outputDir });
-          
+
           if (mergeResult.success) {
             const { outputFile, stats } = mergeResult;
             const durationMinutes = (stats.totalDuration / 60).toFixed(1);
@@ -1792,13 +1836,13 @@ async function startVideoSync() {
     addLog('sync-log', `📁 Ensuring directories exist...`, 'info');
     await ipcRenderer.invoke('create-directory', outputDir);
     addLog('sync-log', `✅ Output directory ready: ${outputDir}`, 'success');
-    
+
     // Verify voice and video directories exist
     const voiceDirCheck = await ipcRenderer.invoke('file-exists', voiceDir);
     if (!voiceDirCheck.exists) {
       throw new Error(`Voice directory does not exist: ${voiceDir}`);
     }
-    
+
     const videoDirCheck = await ipcRenderer.invoke('file-exists', videoDir);
     if (!videoDirCheck.exists) {
       throw new Error(`Video directory does not exist: ${videoDir}`);
@@ -1825,7 +1869,7 @@ async function startVideoSync() {
     // Load processed files list
     const processedFile = path.join(outputDir, 'processed_files.json');
     let processedSet = new Set();
-    
+
     if (!forceReprocess) {
       try {
         const processedData = await ipcRenderer.invoke('read-file', processedFile);
@@ -1976,12 +2020,12 @@ async function checkMissingVideos() {
     if (!voiceDirCheck.exists) {
       throw new Error(`Voice directory does not exist: ${voiceDir}`);
     }
-    
+
     const videoDirCheck = await ipcRenderer.invoke('file-exists', videoDir);
     if (!videoDirCheck.exists) {
       throw new Error(`Video directory does not exist: ${videoDir}`);
     }
-    
+
     // Ensure output directory exists
     await ipcRenderer.invoke('create-directory', outputDir);
 
@@ -2120,7 +2164,7 @@ async function retryMissingVideos() {
   }
 
   const { result } = missingVideosData;
-  
+
   if (result.missingSync === 0) {
     alert('No videos to retry! All available videos are already synced.');
     return;
@@ -2140,23 +2184,23 @@ async function retryMissingVideos() {
   hideMissingVideosSection();
 
   const { voiceDir, videoDir, outputDir } = missingVideosData;
-  
+
   syncProcessing = true;
   clearLog('sync-log');
   updateProgress('sync-progress-bar', 0);
 
   try {
     addLog('sync-log', '🔄 Retrying missing videos...', 'info');
-    
+
     // Ensure output directory exists
     await ipcRenderer.invoke('create-directory', outputDir);
-    
+
     // Verify voice and video directories exist
     const voiceDirCheck = await ipcRenderer.invoke('file-exists', voiceDir);
     if (!voiceDirCheck.exists) {
       throw new Error(`Voice directory does not exist: ${voiceDir}`);
     }
-    
+
     const videoDirCheck = await ipcRenderer.invoke('file-exists', videoDir);
     if (!videoDirCheck.exists) {
       throw new Error(`Video directory does not exist: ${videoDir}`);
@@ -2169,7 +2213,7 @@ async function retryMissingVideos() {
     // Load processed files list
     const processedFile = path.join(outputDir, 'processed_files.json');
     let processedSet = new Set();
-    
+
     try {
       const processedData = await ipcRenderer.invoke('read-file', processedFile);
       if (processedData.success) {
@@ -2280,12 +2324,12 @@ ipcRenderer.on('video-sync-progress', (event, data) => {
 // Auto-save settings when TTS fields change
 function autoSaveSettings() {
   saveSettings();
-  
+
   const statusDiv = document.getElementById('auto-save-status');
   if (statusDiv) {
     statusDiv.textContent = '💾 Settings saved automatically';
     statusDiv.style.color = '#28a745';
-    
+
     setTimeout(() => {
       statusDiv.textContent = '';
     }, 2000);
@@ -2300,7 +2344,7 @@ function saveSettings() {
   settings.t2vMaxRetries = parseInt(document.getElementById('t2v-max-retries')?.value || 2);
   settings.t2vTaskDelay = parseInt(document.getElementById('t2v-task-delay')?.value || 500);
   settings.maxRetries = parseInt(document.getElementById('max-retries').value);
-  
+
   // Save GENAI TTS settings
   const genaiApiType = document.getElementById('genai-api-type');
   const genaiApiKey = document.getElementById('genai-api-key');
@@ -2310,7 +2354,7 @@ function saveSettings() {
   const genaiOutputDir = document.getElementById('genai-output-dir');
   const genaiLanguage = document.getElementById('genai-language');
   const genaiDownloadSrt = document.getElementById('genai-download-srt');
-  
+
   if (genaiApiType) settings.genai.apiType = genaiApiType.value;
   if (genaiApiKey) settings.genai.apiKey = genaiApiKey.value.trim();
   if (genaiVoiceId) settings.genai.voiceId = genaiVoiceId.value.trim();
@@ -2319,7 +2363,7 @@ function saveSettings() {
   if (genaiOutputDir) settings.genai.outputDir = genaiOutputDir.value.trim();
   if (genaiLanguage) settings.genai.language = genaiLanguage.value;
   if (genaiDownloadSrt) settings.genai.downloadSrt = genaiDownloadSrt.checked;
-  
+
   // Save AI33 TTS settings
   const ai33ApiType = document.getElementById('ai33-api-type');
   const ai33ApiKey = document.getElementById('ai33-api-key');
@@ -2328,7 +2372,7 @@ function saveSettings() {
   const ai33NgrokUrl = document.getElementById('ai33-ngrok-url');
   const ai33OutputDir = document.getElementById('ai33-output-dir');
   const ai33Language = document.getElementById('ai33-language');
-  
+
   if (ai33ApiType) settings.ai33.apiType = ai33ApiType.value;
   if (ai33ApiKey) settings.ai33.apiKey = ai33ApiKey.value.trim();
   if (ai33VoiceId) settings.ai33.voiceId = ai33VoiceId.value.trim();
@@ -2336,23 +2380,23 @@ function saveSettings() {
   if (ai33NgrokUrl) settings.ai33.ngrokUrl = ai33NgrokUrl.value.trim();
   if (ai33OutputDir) settings.ai33.outputDir = ai33OutputDir.value.trim();
   if (ai33Language) settings.ai33.language = ai33Language.value;
-  
+
   // Save Video Sync settings
   settings.voiceDir = document.getElementById('voice-dir').value.trim();
   settings.videoDir = document.getElementById('video-dir').value.trim();
   settings.syncOutputDir = document.getElementById('sync-output-dir').value.trim();
-  
+
   // Save T2V settings
   const t2vBaseUrl = document.getElementById('t2v-base-url');
   const t2vApiKey = document.getElementById('t2v-api-key');
   const t2vOutputDir = document.getElementById('t2v-output-dir');
   const t2vAspectRatio = document.getElementById('t2v-aspect-ratio');
-  
+
   if (t2vBaseUrl) settings.t2vBaseUrl = t2vBaseUrl.value.trim();
   if (t2vApiKey) settings.t2vApiKey = t2vApiKey.value.trim();
   if (t2vOutputDir) settings.t2vOutputDir = t2vOutputDir.value.trim();
   if (t2vAspectRatio) settings.t2vAspectRatio = t2vAspectRatio.value;
-  
+
   settings.t2vAccounts = t2vAccounts;
 
   // Save T2V IO settings
@@ -2402,7 +2446,7 @@ function loadSettings() {
   const saved = localStorage.getItem('appSettings');
   if (saved) {
     const savedSettings = JSON.parse(saved);
-    
+
     // Migrate old settings to new structure if needed
     if (!savedSettings.genai && savedSettings.apiProvider) {
       savedSettings.genai = {
@@ -2425,9 +2469,9 @@ function loadSettings() {
         language: 'vi'
       };
     }
-    
+
     settings = savedSettings;
-    
+
     document.getElementById('callback-port').value = settings.callbackPort;
     document.getElementById('callback-host').value = settings.callbackHost;
     document.getElementById('batch-size').value = settings.batchSize || 15;
@@ -2441,7 +2485,7 @@ function loadSettings() {
       document.getElementById('t2v-task-delay').value = settings.t2vTaskDelay || 500;
     }
     document.getElementById('max-retries').value = settings.maxRetries;
-    
+
     // Restore GENAI TTS settings
     if (settings.genai) {
       if (settings.genai.apiType) document.getElementById('genai-api-type').value = settings.genai.apiType;
@@ -2453,7 +2497,7 @@ function loadSettings() {
       if (settings.genai.language) document.getElementById('genai-language').value = settings.genai.language;
       if (settings.genai.downloadSrt !== undefined) document.getElementById('genai-download-srt').checked = settings.genai.downloadSrt;
     }
-    
+
     // Restore AI33 TTS settings
     if (settings.ai33) {
       if (settings.ai33.apiType) document.getElementById('ai33-api-type').value = settings.ai33.apiType;
@@ -2464,18 +2508,18 @@ function loadSettings() {
       if (settings.ai33.outputDir) document.getElementById('ai33-output-dir').value = settings.ai33.outputDir;
       if (settings.ai33.language) document.getElementById('ai33-language').value = settings.ai33.language;
     }
-    
+
     // Update info texts
     updateGenaiApiTypeInfo();
     updateAi33ApiTypeInfo();
     updateMergeSrtVisibility('genai');
-    
+
     // Restore Video Sync settings
     if (settings.voiceDir) document.getElementById('voice-dir').value = settings.voiceDir;
     if (settings.videoDir) document.getElementById('video-dir').value = settings.videoDir;
     if (settings.syncOutputDir) document.getElementById('sync-output-dir').value = settings.syncOutputDir;
     if (settings.hwAccel) document.getElementById('hw-accel').value = settings.hwAccel;
-    
+
     // Restore T2V settings
     if (settings.t2vBaseUrl) document.getElementById('t2v-base-url').value = settings.t2vBaseUrl;
     if (settings.t2vApiKey) document.getElementById('t2v-api-key').value = settings.t2vApiKey;
@@ -2532,7 +2576,7 @@ function sleep(ms) {
 function toggleT2VConfig() {
   const section = document.getElementById('t2v-config-section');
   const toggle = document.getElementById('t2v-config-toggle');
-  
+
   if (section.style.display === 'none') {
     section.style.display = 'grid';
     toggle.textContent = '▼';
@@ -2556,20 +2600,20 @@ async function selectT2VOutputDir() {
 function addT2VAccount() {
   const input = document.getElementById('new-account-name');
   const accountName = input.value.trim();
-  
+
   if (!accountName) {
     alert('Please enter an account name');
     return;
   }
-  
+
   if (t2vAccounts.includes(accountName)) {
     alert('Account already exists');
     return;
   }
-  
+
   t2vAccounts.push(accountName);
   input.value = '';
-  
+
   renderT2VAccounts();
   autoSaveSettings();
 }
@@ -2584,12 +2628,12 @@ function removeT2VAccount(accountName) {
 // Render T2V accounts list
 function renderT2VAccounts() {
   const listDiv = document.getElementById('t2v-accounts-list');
-  
+
   if (t2vAccounts.length === 0) {
     listDiv.innerHTML = '<p style="text-align: center; color: #6c757d; margin: 15px 0;">No accounts added yet</p>';
     return;
   }
-  
+
   listDiv.innerHTML = t2vAccounts.map(acc => `
     <div class="account-tag">
       <span>👤 ${acc}</span>
@@ -2604,9 +2648,9 @@ function distributePrompts(prompts, accounts) {
   accounts.forEach(acc => {
     distribution[acc] = [];
   });
-  
+
   const promptsPerAccount = Math.ceil(prompts.length / accounts.length);
-  
+
   prompts.forEach((prompt, index) => {
     const accountIndex = Math.floor(index / promptsPerAccount);
     const account = accounts[Math.min(accountIndex, accounts.length - 1)];
@@ -2619,19 +2663,19 @@ function distributePrompts(prompts, accounts) {
       videoUrl: null
     });
   });
-  
+
   return distribution;
 }
 
 // Start T2V processing
 async function startT2VProcessing() {
   console.log('🔴 BUTTON CLICKED - startT2VProcessing called');
-  
+
   if (t2vProcessing) {
     alert('Processing already in progress');
     return;
   }
-  
+
   // Validate inputs
   const baseUrl = document.getElementById('t2v-base-url').value.trim();
   const apiKey = document.getElementById('t2v-api-key').value.trim();
@@ -2639,7 +2683,7 @@ async function startT2VProcessing() {
   const aspectRatio = document.getElementById('t2v-aspect-ratio').value;
   const promptsText = document.getElementById('t2v-prompts').value.trim();
   const batchSize = settings.t2vBatchSize || 5;
-  
+
   console.log('=== START T2V GENERATION ===');
   console.log('Base URL:', baseUrl);
   console.log('API Key:', apiKey ? `${apiKey.substring(0, 10)}...` : 'NOT SET');
@@ -2647,96 +2691,96 @@ async function startT2VProcessing() {
   console.log('Aspect Ratio:', aspectRatio);
   console.log('Batch Size:', batchSize);
   console.log('Accounts:', t2vAccounts);
-  
+
   if (!baseUrl) {
     console.error('Validation failed: Base URL is empty');
     alert('Please enter Base URL');
     return;
   }
-  
+
   if (!apiKey) {
     console.error('Validation failed: API Key is empty');
     alert('Please enter API Key');
     return;
   }
-  
+
   if (!outputDir) {
     console.error('Validation failed: Output directory is empty');
     alert('Please select output directory');
     return;
   }
-  
+
   if (t2vAccounts.length === 0) {
     console.error('Validation failed: No accounts added');
     alert('Please add at least one account');
     return;
   }
-  
+
   if (!promptsText) {
     console.error('Validation failed: Prompts text is empty');
     alert('Please enter prompts');
     return;
   }
-  
+
   const prompts = promptsText.split('\n').map(p => p.trim()).filter(p => p.length > 0);
-  
+
   console.log('Total prompts parsed:', prompts.length);
   console.log('First 3 prompts:', prompts.slice(0, 3));
-  
+
   if (prompts.length === 0) {
     console.error('Validation failed: No valid prompts found');
     alert('No valid prompts found');
     return;
   }
-  
+
   console.log('✅ All validations passed');
-  
+
   t2vProcessing = true;
   t2vCancelled = false;
-  
+
   document.getElementById('start-t2v-btn').disabled = true;
   document.getElementById('stop-t2v-btn').style.display = 'inline-block';
-  
+
   const logDiv = document.getElementById('t2v-log');
   logDiv.innerHTML = '';
-  
+
   addLog('t2v-log', `🎬 Starting Text-to-Video generation...`, 'info');
   addLog('t2v-log', `📊 Total prompts: ${prompts.length} | Accounts: ${t2vAccounts.length} | Batch size: ${batchSize}`, 'info');
   addLog('t2v-log', `🔧 Config: ${baseUrl} | Aspect: ${aspectRatio}`, 'info');
-  
+
   // Distribute prompts
   t2vTasksData = distributePrompts(prompts, t2vAccounts);
-  
+
   console.log('Prompts distribution:', Object.entries(t2vTasksData).map(([account, tasks]) => ({
     account,
     count: tasks.length
   })));
-  
+
   // Log distribution
   for (const [account, tasks] of Object.entries(t2vTasksData)) {
     addLog('t2v-log', `👤 ${account}: ${tasks.length} prompts`, 'info');
   }
-  
+
   // Show status section
   document.getElementById('t2v-status').style.display = 'block';
   renderAccountsStatus();
-  
+
   console.log('Starting concurrent processing for all accounts...');
-  
+
   // Process all accounts concurrently
   const accountPromises = t2vAccounts.map(account => processAccountPrompts(account, baseUrl, apiKey, aspectRatio, outputDir));
-  
+
   try {
     await Promise.all(accountPromises);
-    
+
     console.log('All accounts processing completed');
-    
+
     if (!t2vCancelled) {
       addLog('t2v-log', '✅ All processing completed!', 'success');
     } else {
       addLog('t2v-log', '⏹️ Processing stopped by user', 'warning');
     }
-    
+
     // Show failed/incomplete prompts
     showFailedPrompts();
   } catch (error) {
@@ -2753,45 +2797,45 @@ async function processAccountPrompts(accountName, baseUrl, apiKey, aspectRatio, 
   const tasks = t2vTasksData[accountName];
   const batchSize = settings.t2vBatchSize || 5;
   const maxRetries = settings.t2vMaxRetries || 2;
-  
+
   updateAccountStatus(accountName, 'processing', retryAttempt);
-  
+
   // Clear stop flag for this account
   t2vAccountStops[accountName] = false;
-  
+
   if (retryAttempt === 0) {
     addLog('t2v-log', `🎥 [${accountName}] Starting batch processing with concurrency: ${batchSize}`, 'info');
   } else {
     addLog('t2v-log', `🔄 [${accountName}] Auto-retry attempt ${retryAttempt}/${maxRetries}`, 'info');
   }
-  
+
   // Semaphore pattern for batch processing
   const semaphore = new Array(batchSize).fill(null);
-  
+
   const processTask = async (task) => {
     if (t2vCancelled || t2vAccountStops[accountName]) {
       console.log(`[${accountName}] Task #${task.index} skipped - stopped`);
       return;
     }
-    
+
     // Skip if already completed successfully
     if (task.status === 'downloaded' || task.status === 'completed') {
       console.log(`[${accountName}] Task #${task.index} skipped - already completed`);
       return;
     }
-    
+
     // Initialize retry count if not exists
     if (typeof task.retryCount === 'undefined') {
       task.retryCount = 0;
     }
-    
+
     task.status = 'creating';
     renderAccountsStatus();
-    
+
     addLog('t2v-log', `🎥 [${accountName}] Processing prompt #${task.index}: ${task.text.substring(0, 50)}...`, 'info');
     console.log(`\n>>> [${accountName}] Starting task #${task.index}`);
     console.log('Prompt:', task.text);
-    
+
     try {
       // Create video generation task
       console.log(`[${accountName}] Calling create-t2v-task API...`);
@@ -2802,72 +2846,72 @@ async function processAccountPrompts(accountName, baseUrl, apiKey, aspectRatio, 
         prompt: task.text,
         aspectRatio
       });
-      
+
       console.log(`[${accountName}] API Result:`, result);
-      
+
       if (!result.success) {
         throw new Error(result.error);
       }
-      
+
       task.taskId = result.taskId;
       addLog('t2v-log', `✅ [${accountName}] Task created: ${result.taskId}`, 'success');
       console.log(`✅ [${accountName}] Task ID: ${result.taskId}`);
-      
+
       // API returns downloadUrl immediately, no need to poll
       if (!result.videoUrl) {
         throw new Error('No video URL returned from API');
       }
-      
+
       const videoUrl = result.videoUrl;
       task.videoUrl = videoUrl;
       task.status = 'generated';
       renderAccountsStatus();
-      
+
       console.log(`✅ [${accountName}] Video URL: ${videoUrl}`);
       addLog('t2v-log', `✅ [${accountName}] Video ready, starting download...`, 'success');
-      
+
       // Download video
       task.status = 'downloading';
       renderAccountsStatus();
       await downloadT2VVideo(videoUrl, outputDir, task.index, accountName, task.text);
-      
+
       task.status = 'downloaded';
-      
+
     } catch (error) {
       task.status = 'error';
       task.error = error.message;
       addLog('t2v-log', `❌ [${accountName}] Prompt #${task.index} failed: ${error.message}`, 'error');
     }
-    
+
     renderAccountsStatus();
     updateT2VProgress();
   };
-  
+
   const processQueue = async (taskIndex) => {
     if (taskIndex >= tasks.length) return;
     if (t2vCancelled || t2vAccountStops[accountName]) return;
-    
+
     const task = tasks[taskIndex];
     await processTask(task);
-    
+
     // Delay after task completes, before picking next task
     const delay = settings.t2vTaskDelay || 500;
     if (delay > 0) {
       await sleep(delay);
     }
-    
+
     // Process next task in queue
     await processQueue(taskIndex + batchSize);
   };
-  
+
   // Start concurrent processing
   const promises = semaphore.map((_, index) => processQueue(index));
   await Promise.all(promises);
-  
+
   if (!t2vCancelled && !t2vAccountStops[accountName]) {
     // Check for failed tasks
     const failedTasks = tasks.filter(t => t.status === 'error');
-    
+
     if (failedTasks.length > 0 && retryAttempt < maxRetries) {
       // Auto-retry failed tasks
       addLog('t2v-log', `⚠️ [${accountName}] ${failedTasks.length} prompts failed, auto-retrying...`, 'warning');
@@ -2881,12 +2925,12 @@ async function processAccountPrompts(accountName, baseUrl, apiKey, aspectRatio, 
     }
   } else if (t2vAccountStops[accountName]) {
     addLog('t2v-log', `⏹️ [${accountName}] Processing stopped by user`, 'warning');
-    
+
     // Count incomplete tasks for this account
-    const incompleteTasks = tasks.filter(t => 
-      t.status === 'error' || 
-      t.status === 'pending' || 
-      t.status === 'creating' || 
+    const incompleteTasks = tasks.filter(t =>
+      t.status === 'error' ||
+      t.status === 'pending' ||
+      t.status === 'creating' ||
       t.status === 'downloading' ||
       t.status === 'generated'
     );
@@ -2894,9 +2938,9 @@ async function processAccountPrompts(accountName, baseUrl, apiKey, aspectRatio, 
       addLog('t2v-log', `⚠️ [${accountName}] ${incompleteTasks.length} prompts incomplete`, 'warning');
     }
   }
-  
+
   updateAccountStatus(accountName, 'completed', retryAttempt);
-  
+
   // Check if all accounts finished and show incomplete prompts
   checkAndShowIncompletePrompts();
 }
@@ -2909,17 +2953,17 @@ function sanitizeFilename(text, maxLength = 100) {
     .replace(/[^a-zA-Z0-9\s\-_.\u00C0-\u1EF9\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF]/g, '')
     .replace(/\s+/g, ' ')
     .trim();
-  
+
   // Limit length
   if (sanitized.length > maxLength) {
     sanitized = sanitized.substring(0, maxLength).trim();
   }
-  
+
   // If empty after sanitization, use timestamp
   if (!sanitized) {
     sanitized = `video_${Date.now()}`;
   }
-  
+
   return sanitized;
 }
 
@@ -2927,24 +2971,24 @@ function sanitizeFilename(text, maxLength = 100) {
 async function downloadT2VVideo(videoUrl, outputDir, promptIndex, accountName, promptText = '') {
   const baseName = promptText ? sanitizeFilename(promptText) : `prompt_${promptIndex}`;
   const fileName = `${baseName}.mp4`;
-  
+
   const result = await ipcRenderer.invoke('download-t2v-video', {
     videoUrl,
     outputDir,
     fileName
   });
-  
+
   if (!result.success) {
     throw new Error(result.error);
   }
-  
+
   addLog('t2v-log', `💾 [${accountName}] Downloaded: ${fileName}`, 'success');
 }
 
 // Stop T2V processing
 function stopT2VProcessing() {
   if (!t2vProcessing) return;
-  
+
   const confirmed = confirm('Are you sure you want to stop all processing?');
   if (confirmed) {
     t2vCancelled = true;
@@ -2960,19 +3004,19 @@ function stopT2VProcessing() {
 function checkAndShowIncompletePrompts() {
   // Check if we're in a processing session
   if (!t2vProcessing) return;
-  
+
   // Check if all accounts have completed status
   let allCompleted = true;
   for (const account of t2vAccounts) {
     const tasks = t2vTasksData[account];
     if (!tasks || !tasks.accountStatus) continue;
-    
+
     if (tasks.accountStatus !== 'completed') {
       allCompleted = false;
       break;
     }
   }
-  
+
   // If all accounts finished, show incomplete prompts
   if (allCompleted) {
     console.log('All accounts finished, showing incomplete prompts...');
@@ -2984,7 +3028,7 @@ function checkAndShowIncompletePrompts() {
 function updateAccountStatus(accountName, status, retryAttempt) {
   const tasks = t2vTasksData[accountName];
   if (!tasks || !Array.isArray(tasks)) return;
-  
+
   // Count stats
   const downloaded = tasks.filter(t => t.status === 'downloaded' || t.status === 'completed').length;
   const generated = tasks.filter(t => t.status === 'generated').length;
@@ -2992,13 +3036,13 @@ function updateAccountStatus(accountName, status, retryAttempt) {
   const pending = tasks.filter(t => t.status === 'pending').length;
   const creating = tasks.filter(t => t.status === 'creating').length;
   const downloading = tasks.filter(t => t.status === 'downloading').length;
-  
+
   // Processing = creating + downloading (đang xử lý API hoặc đang download)
   const processing = creating + downloading;
-  
+
   // Total successful videos (generated + downloaded)
   const totalSuccessful = generated + downloaded;
-  
+
   // Auto-detect status based on tasks state
   let finalStatus = status;
   if (pending === 0 && creating === 0 && downloading === 0) {
@@ -3007,50 +3051,51 @@ function updateAccountStatus(accountName, status, retryAttempt) {
   } else if (creating > 0 || downloading > 0) {
     finalStatus = 'processing';
   }
-  
+
   tasks.accountStatus = finalStatus;
-  tasks.retryAttempt = retryAttempt || 0;
-  tasks.stats = { 
-    downloaded, 
-    totalSuccessful, 
-    processing, 
-    errors, 
-    pending, 
-    total: tasks.length 
+  tasks.retryAttempt = (typeof retryAttempt === 'number') ? retryAttempt : 0;
+  tasks.stats = {
+    downloaded,
+    totalSuccessful,
+    processing,
+    errors,
+    pending,
+    total: tasks.length
   };
 }
 
 // Render accounts status cards
 function renderAccountsStatus() {
   const statusDiv = document.getElementById('t2v-accounts-status');
-  
+
   const html = t2vAccounts.map(account => {
     const tasks = t2vTasksData[account] || [];
-    
-    // Auto-update status before rendering
+
+    // Auto-update status before rendering (preserve existing retryAttempt)
     if (Array.isArray(tasks) && tasks.length > 0) {
-      updateAccountStatus(account, tasks.accountStatus || 'idle');
+      const currentRetryAttempt = tasks.retryAttempt || 0;
+      updateAccountStatus(account, tasks.accountStatus || 'idle', currentRetryAttempt);
     }
-    
-    const stats = tasks.stats || { 
-      downloaded: 0, 
-      totalSuccessful: 0, 
-      processing: 0, 
-      errors: 0, 
-      pending: tasks.length, 
-      total: tasks.length 
+
+    const stats = tasks.stats || {
+      downloaded: 0,
+      totalSuccessful: 0,
+      processing: 0,
+      errors: 0,
+      pending: tasks.length,
+      total: tasks.length
     };
     const status = tasks.accountStatus || 'idle';
     const retryAttempt = tasks.retryAttempt || 0;
     const maxRetries = settings.t2vMaxRetries || 2;
-    
-    const statusClass = status === 'processing' ? 'processing' : 
-                        status === 'completed' ? 'completed' : 
-                        stats.errors > 0 ? 'error' : '';
-    
+
+    const statusClass = status === 'processing' ? 'processing' :
+      status === 'completed' ? 'completed' :
+        stats.errors > 0 ? 'error' : '';
+
     // Show retry badge in header
     const retryBadge = `<span class="retry-badge" style="font-size: 0.85rem; padding: 4px 8px; background: ${retryAttempt > 0 ? '#ff9800' : '#888'}; color: white; border-radius: 4px; font-weight: 500;">🔄 ${retryAttempt}/${maxRetries}</span>`;
-    
+
     return `
       <div class="account-status-card ${statusClass}">
         <h4 style="display: flex; justify-content: space-between; align-items: center;">
@@ -3097,7 +3142,7 @@ function renderAccountsStatus() {
       </div>
     `;
   }).join('');
-  
+
   statusDiv.innerHTML = html;
 }
 
@@ -3125,48 +3170,48 @@ function replaceAccount(oldAccountName) {
     alert('Account not found!');
     return;
   }
-  
+
   // Count incomplete tasks
-  const incompleteTasks = tasks.filter(t => 
+  const incompleteTasks = tasks.filter(t =>
     t.status !== 'downloaded' && t.status !== 'completed' && t.status !== 'transferred'
   );
-  
+
   if (incompleteTasks.length === 0) {
     alert('All tasks in this account are already completed!');
     return;
   }
-  
+
   // Get available accounts (exclude current account)
   const availableAccounts = t2vAccounts.filter(acc => acc !== oldAccountName);
-  
+
   if (availableAccounts.length === 0) {
     alert('No other accounts available! Please add more accounts first.');
     return;
   }
-  
+
   // Store context
   replaceAccountContext = {
     oldAccountName,
     incompleteTasks,
     availableAccounts
   };
-  
+
   // Show modal
   const modal = document.getElementById('replace-account-modal');
   const info = document.getElementById('replace-account-info');
   const select = document.getElementById('replace-account-select');
-  
+
   info.innerHTML = `
     <strong>Account:</strong> ${oldAccountName}<br>
     <strong>Incomplete tasks:</strong> ${incompleteTasks.length}<br><br>
     These tasks will be transferred to the selected account and reset to pending status.
   `;
-  
+
   // Populate dropdown
-  select.innerHTML = availableAccounts.map(acc => 
+  select.innerHTML = availableAccounts.map(acc =>
     `<option value="${acc}">${acc}</option>`
   ).join('');
-  
+
   modal.style.display = 'flex';
 }
 
@@ -3177,21 +3222,21 @@ function closeReplaceAccountModal() {
 
 function confirmReplaceAccount() {
   if (!replaceAccountContext) return;
-  
+
   const { oldAccountName, incompleteTasks } = replaceAccountContext;
   const select = document.getElementById('replace-account-select');
   const newAccountName = select.value;
-  
+
   if (!newAccountName) {
     alert('Please select an account!');
     return;
   }
-  
+
   console.log(`Replacing account: ${oldAccountName} -> ${newAccountName}`);
-  
+
   // Get existing tasks for new account or create empty array
   const existingTasks = t2vTasksData[newAccountName] || [];
-  
+
   // Transfer incomplete tasks
   const transferredTasks = incompleteTasks.map(task => ({
     ...task,
@@ -3199,30 +3244,30 @@ function confirmReplaceAccount() {
     error: null,
     retryCount: 0
   }));
-  
+
   // Add transferred tasks to new account
   t2vTasksData[newAccountName] = [...existingTasks, ...transferredTasks];
-  
+
   // Mark transferred tasks in old account as 'transferred'
   incompleteTasks.forEach(task => {
     task.status = 'transferred';
     task.error = `Transferred to ${newAccountName}`;
   });
-  
+
   addLog('t2v-log', `🔄 Account replaced: ${oldAccountName} → ${newAccountName}`, 'info');
   addLog('t2v-log', `📦 Transferred ${transferredTasks.length} incomplete task(s)`, 'info');
-  
+
   // Save settings and re-render
   autoSaveSettings();
   renderAccountsStatus();
-  
+
   // Close modal
   closeReplaceAccountModal();
-  
+
   alert(`Account replaced successfully!\n\n` +
-        `Old: ${oldAccountName}\n` +
-        `New: ${newAccountName}\n` +
-        `Transferred: ${transferredTasks.length} task(s)`);
+    `Old: ${oldAccountName}\n` +
+    `New: ${newAccountName}\n` +
+    `Transferred: ${transferredTasks.length} task(s)`);
 }
 
 // Get detailed status icon with animation
@@ -3231,14 +3276,14 @@ function confirmReplaceAccount() {
 function updateT2VProgress() {
   let totalCompleted = 0;
   let totalTasks = 0;
-  
+
   for (const tasks of Object.values(t2vTasksData)) {
     if (Array.isArray(tasks)) {
       totalTasks += tasks.length;
       totalCompleted += tasks.filter(t => t.status === 'downloaded' || t.status === 'completed' || t.status === 'error').length;
     }
   }
-  
+
   const percentage = totalTasks > 0 ? (totalCompleted / totalTasks) * 100 : 0;
   document.getElementById('t2v-progress-bar').style.width = `${percentage}%`;
 }
@@ -3246,14 +3291,14 @@ function updateT2VProgress() {
 // Show failed prompts
 function showFailedPrompts() {
   const failedPrompts = [];
-  
+
   for (const [account, tasks] of Object.entries(t2vTasksData)) {
     if (Array.isArray(tasks)) {
       // Include all incomplete prompts: error, pending, creating, downloading, generated (not downloaded yet)
-      const accountFailed = tasks.filter(t => 
-        t.status === 'error' || 
-        t.status === 'pending' || 
-        t.status === 'creating' || 
+      const accountFailed = tasks.filter(t =>
+        t.status === 'error' ||
+        t.status === 'pending' ||
+        t.status === 'creating' ||
         t.status === 'downloading' ||
         t.status === 'generated'
       );
@@ -3262,23 +3307,23 @@ function showFailedPrompts() {
       });
     }
   }
-  
+
   if (failedPrompts.length === 0) {
     addLog('t2v-log', '✅ All prompts processed successfully!', 'success');
     return;
   }
-  
+
   addLog('t2v-log', `⚠️ ${failedPrompts.length} incomplete prompts`, 'warning');
-  
+
   const section = document.getElementById('t2v-failed-section');
   const summary = document.getElementById('t2v-failed-summary');
   const list = document.getElementById('t2v-failed-list');
-  
+
   summary.innerHTML = `
     <p><strong>Total Incomplete:</strong> ${failedPrompts.length}</p>
     <p>These prompts were not successfully downloaded. You can edit and retry them below.</p>
   `;
-  
+
   list.innerHTML = failedPrompts.map((task, idx) => `
     <div class="failed-prompt-item" id="failed-prompt-${idx}">
       <div class="prompt-info">
@@ -3294,7 +3339,7 @@ function showFailedPrompts() {
       </div>
     </div>
   `).join('');
-  
+
   section.style.display = 'block';
 }
 
@@ -3310,12 +3355,12 @@ function editFailedPrompt(idx) {
 // Save edited prompt
 function saveFailedPrompt(idx) {
   const newText = document.getElementById(`prompt-edit-${idx}`).value.trim();
-  
+
   if (!newText) {
     alert('Prompt cannot be empty');
     return;
   }
-  
+
   // Find and update the prompt in t2vTasksData
   let found = false;
   for (const [account, tasks] of Object.entries(t2vTasksData)) {
@@ -3333,14 +3378,14 @@ function saveFailedPrompt(idx) {
       }
     }
   }
-  
+
   document.getElementById(`prompt-display-${idx}`).textContent = newText;
   document.getElementById(`prompt-display-${idx}`).style.display = 'block';
   document.getElementById(`prompt-edit-${idx}`).style.display = 'none';
   document.getElementById(`edit-btn-${idx}`).style.display = 'inline-block';
   document.getElementById(`save-btn-${idx}`).style.display = 'none';
   document.getElementById(`cancel-btn-${idx}`).style.display = 'none';
-  
+
   addLog('t2v-log', `✏️ Prompt #${idx + 1} updated`, 'info');
 }
 
@@ -3359,16 +3404,16 @@ async function retryFailedPrompts() {
   const apiKey = document.getElementById('t2v-api-key').value.trim();
   const outputDir = document.getElementById('t2v-output-dir').value.trim();
   const aspectRatio = document.getElementById('t2v-aspect-ratio').value;
-  
+
   if (!baseUrl || !apiKey || !outputDir) {
     alert('Please check configuration');
     return;
   }
-  
+
   hideFailedPromptsSection();
-  
+
   addLog('t2v-log', '🔄 Retrying failed prompts...', 'info');
-  
+
   // Show retry statistics per account
   let totalErrors = 0;
   for (const [account, tasks] of Object.entries(t2vTasksData)) {
@@ -3381,23 +3426,23 @@ async function retryFailedPrompts() {
       }
     }
   }
-  
+
   if (totalErrors === 0) {
     addLog('t2v-log', '✅ No failed prompts to retry!', 'success');
     return;
   }
-  
+
   addLog('t2v-log', `📊 Total errors to retry: ${totalErrors}`, 'info');
-  
+
   t2vProcessing = true;
   t2vCancelled = false;
-  
+
   document.getElementById('start-t2v-btn').disabled = true;
   document.getElementById('stop-t2v-btn').style.display = 'inline-block';
-  
+
   // Process only failed tasks
   const accountPromises = [];
-  
+
   for (const [account, tasks] of Object.entries(t2vTasksData)) {
     if (Array.isArray(tasks)) {
       const failedTasks = tasks.filter(t => t.status === 'error');
@@ -3408,10 +3453,10 @@ async function retryFailedPrompts() {
       }
     }
   }
-  
+
   try {
     await Promise.all(accountPromises);
-    
+
     if (!t2vCancelled) {
       addLog('t2v-log', '✅ Retry completed!', 'success');
       showFailedPrompts();  // Show remaining failures
@@ -3429,29 +3474,29 @@ async function retryFailedPrompts() {
 async function retryAccountFailedTasks(accountName, failedTasks, baseUrl, apiKey, aspectRatio, outputDir, retryAttempt = 0) {
   const batchSize = settings.t2vBatchSize || 5;
   const maxRetries = settings.t2vMaxRetries || 2;
-  
+
   updateAccountStatus(accountName, 'processing', retryAttempt);
-  
+
   // Clear stop flag for this account
   t2vAccountStops[accountName] = false;
-  
+
   const retryInfo = retryAttempt > 0 ? ` (Attempt ${retryAttempt}/${maxRetries})` : '';
   addLog('t2v-log', `🔄 [${accountName}] Retrying ${failedTasks.length} failed prompts with batch size: ${batchSize}${retryInfo}`, 'info');
-  
+
   // Semaphore pattern for batch processing
   const semaphore = new Array(batchSize).fill(null);
-  
+
   const processTask = async (task) => {
     if (t2vCancelled || t2vAccountStops[accountName]) return;
-    
+
     task.status = 'creating';
     task.error = null;
     renderAccountsStatus();
-    
+
     addLog('t2v-log', `🔄 [${accountName}] Retrying prompt #${task.index}: ${task.text.substring(0, 50)}...`, 'info');
     console.log(`\n>>> [${accountName}] Retrying task #${task.index}`);
     console.log('Prompt:', task.text);
-    
+
     try {
       console.log(`[${accountName}] Calling create-t2v-task API...`);
       const result = await ipcRenderer.invoke('create-t2v-task', {
@@ -3461,68 +3506,68 @@ async function retryAccountFailedTasks(accountName, failedTasks, baseUrl, apiKey
         prompt: task.text,
         aspectRatio
       });
-      
+
       console.log(`[${accountName}] API Result:`, result);
-      
+
       if (!result.success) {
         throw new Error(result.error);
       }
-      
+
       task.taskId = result.taskId;
       addLog('t2v-log', `✅ [${accountName}] Task created: ${result.taskId}`, 'success');
       console.log(`✅ [${accountName}] Task ID: ${result.taskId}`);
-      
+
       // API returns downloadUrl immediately, no need to poll
       if (!result.videoUrl) {
         throw new Error('No video URL returned from API');
       }
-      
+
       const videoUrl = result.videoUrl;
       task.videoUrl = videoUrl;
       task.status = 'generated';
       renderAccountsStatus();
-      
+
       console.log(`✅ [${accountName}] Video URL: ${videoUrl}`);
       addLog('t2v-log', `✅ [${accountName}] Video ready, starting download...`, 'success');
-      
+
       task.status = 'downloading';
       renderAccountsStatus();
       await downloadT2VVideo(videoUrl, outputDir, task.index, accountName, task.text);
-      
+
       task.status = 'downloaded';
       addLog('t2v-log', `💾 [${accountName}] Prompt #${task.index} downloaded successfully`, 'success');
-      
+
     } catch (error) {
       task.status = 'error';
       task.error = error.message;
       addLog('t2v-log', `❌ [${accountName}] Retry failed for #${task.index}: ${error.message}`, 'error');
     }
-    
+
     renderAccountsStatus();
     updateT2VProgress();
   };
-  
+
   const processQueue = async (taskIndex) => {
     if (taskIndex >= failedTasks.length) return;
     if (t2vCancelled || t2vAccountStops[accountName]) return;
-    
+
     const task = failedTasks[taskIndex];
     await processTask(task);
-    
+
     // Delay after task completes, before picking next task
     const delay = settings.t2vTaskDelay || 500;
     if (delay > 0) {
       await sleep(delay);
     }
-    
+
     // Process next task in queue
     await processQueue(taskIndex + batchSize);
   };
-  
+
   // Start concurrent processing
   const promises = semaphore.map((_, index) => processQueue(index));
   await Promise.all(promises);
-  
+
   updateAccountStatus(accountName, 'completed', retryAttempt);
 }
 
@@ -3534,15 +3579,15 @@ function hideFailedPromptsSection() {
 // Download generated but not downloaded videos
 async function downloadGeneratedVideos() {
   const outputDir = document.getElementById('t2v-output-dir').value.trim();
-  
+
   if (!outputDir) {
     alert('Please select output directory');
     return;
   }
-  
+
   let generatedCount = 0;
   const generatedTasks = [];
-  
+
   // Find all videos that are generated but not downloaded
   for (const [account, tasks] of Object.entries(t2vTasksData)) {
     if (Array.isArray(tasks)) {
@@ -3553,44 +3598,44 @@ async function downloadGeneratedVideos() {
       generatedCount += generated.length;
     }
   }
-  
+
   if (generatedCount === 0) {
     alert('No generated videos waiting to be downloaded');
     return;
   }
-  
+
   const confirmed = confirm(`Found ${generatedCount} generated videos that haven't been downloaded yet.\nDownload now?`);
   if (!confirmed) return;
-  
+
   log('t2v', `📥 Downloading ${generatedCount} generated videos...`, 'info');
-  
+
   let successCount = 0;
   let failCount = 0;
-  
+
   for (const task of generatedTasks) {
     try {
       task.status = 'downloading';
       renderAccountsStatus();
-      
+
       await downloadT2VVideo(task.videoUrl, outputDir, task.index, task.account, task.text);
-      
+
       task.status = 'downloaded';
       successCount++;
-      
+
       log('t2v', `✅ Downloaded: ${task.text.substring(0, 50)}...`, 'success');
-      
+
     } catch (error) {
       task.status = 'generated'; // Revert to generated status
       failCount++;
       log('t2v', `❌ Download failed for #${task.index}: ${error.message}`, 'error');
     }
-    
+
     renderAccountsStatus();
     updateT2VProgress();
   }
-  
+
   log('t2v', `✅ Download completed! Success: ${successCount}, Failed: ${failCount}`, successCount > 0 ? 'success' : 'warn');
-  
+
   if (failCount > 0) {
     alert(`Download completed with some errors.\nSuccess: ${successCount}\nFailed: ${failCount}`);
   } else {
@@ -3601,34 +3646,34 @@ async function downloadGeneratedVideos() {
 // Download completed videos
 async function downloadCompletedVideos() {
   const outputDir = document.getElementById('t2v-output-dir').value.trim();
-  
+
   if (!outputDir) {
     alert('Please select output directory');
     return;
   }
-  
+
   let completedCount = 0;
-  
+
   for (const [account, tasks] of Object.entries(t2vTasksData)) {
     if (Array.isArray(tasks)) {
       const completed = tasks.filter(t => t.status === 'completed' && t.videoUrl);
       completedCount += completed.length;
     }
   }
-  
+
   if (completedCount === 0) {
     alert('No completed videos to download');
     return;
   }
-  
+
   alert(`Found ${completedCount} completed videos. Download will start now.`);
-  
+
   log('t2v', `📥 Downloading ${completedCount} videos...`, 'info');
-  
+
   for (const [account, tasks] of Object.entries(t2vTasksData)) {
     if (Array.isArray(tasks)) {
       const completed = tasks.filter(t => t.status === 'completed' && t.videoUrl);
-      
+
       for (const task of completed) {
         try {
           await downloadT2VVideo(task.videoUrl, outputDir, task.index, account, task.text);
@@ -3638,7 +3683,7 @@ async function downloadCompletedVideos() {
       }
     }
   }
-  
+
   log('t2v', '✅ All downloads completed!', 'success');
 }
 
@@ -3648,13 +3693,13 @@ function clearT2VForm() {
     alert('Cannot clear while processing');
     return;
   }
-  
+
   document.getElementById('t2v-prompts').value = '';
   document.getElementById('t2v-log').innerHTML = '';
   document.getElementById('t2v-progress-bar').style.width = '0%';
   document.getElementById('t2v-status').style.display = 'none';
   document.getElementById('t2v-failed-section').style.display = 'none';
-  
+
   t2vTasksData = {};
 }
 
@@ -3666,7 +3711,7 @@ function clearT2VForm() {
 function toggleT2VIOConfig() {
   const section = document.getElementById('t2v-io-config-section');
   const toggle = document.getElementById('t2v-io-config-toggle');
-  
+
   if (section.style.display === 'none') {
     section.style.display = 'grid';
     toggle.textContent = '▼';
@@ -3692,7 +3737,7 @@ function clearT2VIOForm() {
     alert('Cannot clear while processing');
     return;
   }
-  
+
   document.getElementById('t2v-io-prompts').value = '';
   document.getElementById('t2v-io-log').innerHTML = '';
   document.getElementById('t2v-io-progress-bar').style.width = '0%';
@@ -3702,7 +3747,7 @@ function clearT2VIOForm() {
   document.getElementById('t2v-io-processing').textContent = '0';
   document.getElementById('t2v-io-status').style.display = 'none';
   document.getElementById('t2v-io-failed-section').style.display = 'none';
-  
+
   t2vIOTasks = [];
 }
 
@@ -3815,7 +3860,7 @@ async function processT2VIOTasksWithRetry(baseUrl, apiKey, aspectRatio, outputDi
     if (failed.length > 0 && retryAttempt < maxRetries) {
       // Auto-retry failed tasks
       addLog('t2v-io-log', `⚠️ ${failed.length} prompts failed after attempt ${retryAttempt + 1}/${maxRetries}. Starting next retry...`, 'warning');
-      
+
       // Reset failed tasks to pending
       failed.forEach(task => {
         task.status = 'pending';
@@ -3839,7 +3884,7 @@ async function processT2VIOTasksWithRetry(baseUrl, apiKey, aspectRatio, outputDi
 // Process T2V IO tasks with concurrency
 async function processT2VIOTasks(baseUrl, apiKey, aspectRatio, outputDir, concurrent, delay) {
   const semaphore = new Array(concurrent).fill(null);
-  
+
   const processTask = async (task) => {
     if (t2vIOCancelled || task.status === 'completed') {
       return;
@@ -3881,7 +3926,7 @@ async function processT2VIOTasks(baseUrl, apiKey, aspectRatio, outputDir, concur
       // Download video
       task.status = 'downloading';
       updateT2VIOStats();
-      
+
       await downloadT2VIOVideo(task.videoUrl, outputDir, task.index, task.text);
 
       task.status = 'completed';
@@ -3940,9 +3985,9 @@ function updateT2VIOStats() {
   const total = t2vIOTasks.length;
   const completed = t2vIOTasks.filter(t => t.status === 'completed').length;
   const failed = t2vIOTasks.filter(t => t.status === 'error').length;
-  const processing = t2vIOTasks.filter(t => 
-    t.status === 'creating' || 
-    t.status === 'downloading' || 
+  const processing = t2vIOTasks.filter(t =>
+    t.status === 'creating' ||
+    t.status === 'downloading' ||
     t.status === 'generated'
   ).length;
 
@@ -4077,7 +4122,7 @@ function stopT2VIOProcessing() {
 // Show failed prompts for T2V IO
 function showT2VIOFailedPrompts() {
   const failed = t2vIOTasks.filter(t => t.status === 'error');
-  
+
   if (failed.length === 0) {
     return;
   }
@@ -4106,7 +4151,7 @@ function hideT2VIOFailedSection() {
 // Retry failed prompts for T2V IO
 async function retryT2VIOFailedPrompts() {
   const failed = t2vIOTasks.filter(t => t.status === 'error');
-  
+
   if (failed.length === 0) {
     alert('No failed prompts to retry');
     return;
@@ -4155,14 +4200,14 @@ async function retryT2VIOFailedPrompts() {
   t2vIOProcessing = false;
   document.getElementById('start-t2v-io-btn').disabled = false;
   document.getElementById('stop-t2v-io-btn').style.display = 'none';
-  
+
   updateT2VIOStats();
 }
 
 // Check missing T2V IO prompts (prompts without downloaded videos)
 async function checkT2VIOMissingPrompts() {
   const outputDir = document.getElementById('t2v-io-output-dir').value.trim();
-  
+
   if (!outputDir) {
     alert('Please select output directory first');
     return;
@@ -4198,7 +4243,7 @@ async function checkT2VIOMissingPrompts() {
     alert('All prompts have corresponding videos!');
   } else {
     addLog('t2v-io-log', `⚠️ Found ${missingPrompts.length} prompts without videos`, 'warning');
-    
+
     // Show missing prompts in a modal or section
     const section = document.getElementById('t2v-io-failed-section');
     const summary = document.getElementById('t2v-io-failed-summary');
@@ -4246,12 +4291,11 @@ function showT2VIOEditPromptsModal() {
         value="${task.text.replace(/"/g, '&quot;')}" 
         style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px;"
       />
-      <span style="min-width: 80px; font-size: 0.85rem; color: ${
-        task.status === 'completed' ? '#27ae60' :
-        task.status === 'error' ? '#e74c3c' :
+      <span style="min-width: 80px; font-size: 0.85rem; color: ${task.status === 'completed' ? '#27ae60' :
+      task.status === 'error' ? '#e74c3c' :
         task.status === 'pending' ? '#95a5a6' :
-        '#f39c12'
-      };">
+          '#f39c12'
+    };">
         ${task.status}
       </span>
       <button 
@@ -4371,7 +4415,7 @@ async function importT2VIOPrompts() {
 
     if (filePath.endsWith('.json')) {
       const importedData = JSON.parse(content);
-      
+
       if (!Array.isArray(importedData)) {
         throw new Error('Invalid JSON format. Expected an array of prompts.');
       }
