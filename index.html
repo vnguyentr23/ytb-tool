@@ -261,7 +261,7 @@
               <button
                 id="genai-retry-mp3-btn"
                 class="primary-button"
-                onclick="retryMissingVoices('genai')"
+                onclick="try { console.log('[BUTTON CLICK] Retry button clicked'); retryMissingVoices('genai'); } catch(e) { console.error('[BUTTON ERROR]', e); alert('Error: ' + e.message); }"
                 style="display: none"
               >
                 🔄 Retry Missing Voices
@@ -269,7 +269,7 @@
               <button
                 id="genai-retry-srt-btn"
                 class="primary-button"
-                onclick="retryMissingSrt('genai')"
+                onclick="try { console.log('[BUTTON CLICK] Retry SRT button clicked'); retryMissingSrt('genai'); } catch(e) { console.error('[BUTTON ERROR]', e); alert('Error: ' + e.message); }"
                 style="display: none"
               >
                 🔄 Retry Missing SRT
@@ -486,7 +486,7 @@
               <button
                 id="ai33-retry-mp3-btn"
                 class="primary-button"
-                onclick="retryMissingVoices('ai33')"
+                onclick="try { console.log('[BUTTON CLICK] Retry button clicked'); retryMissingVoices('ai33'); } catch(e) { console.error('[BUTTON ERROR]', e); alert('Error: ' + e.message); }"
                 style="display: none"
               >
                 🔄 Retry Missing Voices
@@ -914,6 +914,12 @@
               style="display: none"
             >
               ⏹️ Stop Generation
+            </button>
+            <button
+              class="secondary-button"
+              onclick="checkT2VMissingPrompts()"
+            >
+              🔍 Check Missing
             </button>
             <button
               class="secondary-button"

@@ -220,45 +220,201 @@ ipcMain.handle('stop-callback-server', async () => {
   });
 });
 
+// Test function for sentence splitting
+ipcMain.handle('test-split-text', async (event, { text, language = 'en' }) => {
+  try {
+    console.log('\n=== TEST SPLIT TEXT ===');
+    console.log('Input text length:', text.length);
+    console.log('Language:', language);
+    console.log('Input text:', text);
+    console.log('\n--- Character Analysis ---');
+    
+    // Analyze each character
+    for (let i = 0; i < text.length; i++) {
+      const char = text[i];
+      const charCode = char.charCodeAt(0);
+      const hex = charCode.toString(16).toUpperCase().padStart(4, '0');
+      console.log(`[${i}] '${char}' -> U+${hex} (${charCode})`);
+    }
+    
+    return { success: true, analysis: 'Check console for detailed output' };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
 // Split text into sentences
 ipcMain.handle('split-text', async (event, { text, language = 'en' }) => {
   try {
-    // Define regex patterns for different languages
-    let splitRegex;
+    console.log('\n=== SPLIT TEXT FUNCTION ===');
+    console.log('Language:', language);
+    console.log('Text length:', text.length);
+    console.log('Text preview:', text.substring(0, 200));
     
-    switch (language) {
-      case 'ja': // Japanese
-        // Japanese full-width punctuation: 。！？
-        splitRegex = /(?<=[。！？])/;
-        break;
+    // Smart sentence splitting that handles quotes and special cases
+    const smartSplit = (text, language) => {
+      const sentences = [];
+      let currentSentence = '';
+      let insideQuotes = false;
+      let quoteChar = null;
       
-      case 'zh': // Chinese
-        // Chinese full-width punctuation: 。！？
-        splitRegex = /(?<=[。！？])/;
-        break;
+      // Define sentence-ending punctuation based on language
+      let endPunctuation;
+      switch (language) {
+        case 'ja': // Japanese
+        case 'zh': // Chinese
+          endPunctuation = ['。', '！', '？'];
+          break;
+        case 'ko': // Korean
+          endPunctuation = ['.', '!', '?', '。', '！', '？'];
+          break;
+        case 'vi': // Vietnamese
+        case 'en': // English
+        default:
+          endPunctuation = ['.', '!', '?'];
+          break;
+      }
       
-      case 'ko': // Korean
-        // Korean uses both half-width and full-width
-        splitRegex = /(?<=[.!?。！？])/;
-        break;
+      console.log('End punctuation for', language, ':', endPunctuation);
       
-      case 'vi': // Vietnamese
-      case 'en': // English
-      default:
-        // English/Vietnamese: standard punctuation ., !, ?
-        splitRegex = /(?<=[.!?])/;
-        break;
-    }
+      for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+        const nextChar = text[i + 1];
+        const prevChar = text[i - 1];
+        
+        // Track quote state
+        // Support multiple quote types:
+        // - English: " ' " " ' '
+        // - Japanese: \u300c \u300d \u300e \u300f (corner brackets)
+        // - Chinese: similar to Japanese
+        const openQuotes = ['"', "'", '\u201c', '\u2018', '\u300c', '\u300e'];
+        const closeQuotes = ['"', "'", '\u201d', '\u2019', '\u300d', '\u300f'];
+        const quoteMap = {
+          '"': '"', 
+          "'": '\u2019', 
+          '\u201c': '\u201d', 
+          '\u2018': '\u2019',
+          '\u300c': '\u300d',  // Japanese 「 」
+          '\u300e': '\u300f'   // Japanese 『 』
+        };
+        
+        if (openQuotes.includes(char) && prevChar !== '\\') {
+          if (!insideQuotes) {
+            insideQuotes = true;
+            quoteChar = char;
+          }
+        } else if (closeQuotes.includes(char) && prevChar !== '\\') {
+          if (insideQuotes) {
+            // Check if this is the matching closing quote
+            const expectedClose = quoteMap[quoteChar];
+            if (char === expectedClose || 
+                (quoteChar === char) || // Same quote used for open/close
+                (quoteChar === '"' && char === '\u201d') ||
+                (quoteChar === "'" && char === '\u2019')) {
+              insideQuotes = false;
+              quoteChar = null;
+            }
+          }
+        }
+        
+        currentSentence += char;
+        
+        // Check if this is a sentence-ending punctuation
+        if (endPunctuation.includes(char)) {
+          console.log(`[${i}] Found punctuation '${char}' (U+${char.charCodeAt(0).toString(16).toUpperCase()})`);
+          
+          // Don't split if:
+          // 1. Inside quotes
+          if (insideQuotes) {
+            console.log(`  -> Skipped: inside quotes`);
+            continue;
+          }
+          
+          // 2. Three dots (ellipsis) - only for period
+          if (char === '.' && prevChar === '.' && text[i - 2] === '.') {
+            console.log(`  -> Skipped: ellipsis`);
+            continue;
+          }
+          
+          // 3. Decimal numbers (e.g., 3.14) - only for period
+          if (char === '.' && /\d/.test(prevChar) && /\d/.test(nextChar)) {
+            console.log(`  -> Skipped: decimal number`);
+            continue;
+          }
+          
+          // 4. Common abbreviations (English) - only for period in English
+          if (char === '.' && language === 'en') {
+            const beforeDot = currentSentence.slice(0, -1).split(/\s+/).pop() || '';
+            const commonAbbrev = ['Mr', 'Mrs', 'Ms', 'Dr', 'Prof', 'Sr', 'Jr', 'etc', 'Inc', 'Ltd', 'Co', 'Corp', 'vs'];
+            if (commonAbbrev.some(abbr => beforeDot.toLowerCase() === abbr.toLowerCase())) {
+              console.log(`  -> Skipped: abbreviation (${beforeDot})`);
+              continue;
+            }
+            
+            // Check for initials (e.g., "U.S.A", "P.M")
+            if (/^[A-Z]$/i.test(beforeDot) && /^[A-Z]$/i.test(nextChar)) {
+              console.log(`  -> Skipped: initials`);
+              continue;
+            }
+          }
+          
+          // 5. For Japanese/Chinese full-width punctuation (。！？), always split
+          if (char === '。' || char === '！' || char === '？') {
+            const sentence = currentSentence.trim();
+            console.log(`  -> SPLIT! Full-width punctuation. Sentence: "${sentence.substring(0, 50)}..."`);
+            if (sentence.length > 0) {
+              sentences.push(sentence);
+            }
+            currentSentence = '';
+            continue;
+          }
+          
+          // 6. For other punctuation (.!?), check if next char is appropriate
+          if (nextChar && nextChar !== ' ' && nextChar !== '\n' && nextChar !== '\r' && nextChar !== '\t') {
+            // Exception: if next char is closing quote, it's ok to split
+            const closingQuotes = ['"', "'", '\u201d', '\u2019', '\u300d', '\u300f'];
+            if (closingQuotes.includes(nextChar)) {
+              // It's ok to split before closing quote
+            } else if (language === 'ja' || language === 'zh') {
+              // For Japanese/Chinese with half-width punctuation, allow split even without space
+            } else {
+              // For other languages (English, Vietnamese), require space after punctuation
+              continue;
+            }
+          }
+          
+          // This is a valid sentence ending
+          const sentence = currentSentence.trim();
+          if (sentence.length > 0) {
+            sentences.push(sentence);
+          }
+          currentSentence = '';
+        }
+      }
+      
+      // Add remaining text as last sentence
+      const lastSentence = currentSentence.trim();
+      if (lastSentence.length > 0) {
+        console.log('Adding last sentence:', lastSentence.substring(0, 50) + '...');
+        sentences.push(lastSentence);
+      }
+      
+      console.log('\nTotal sentences found:', sentences.length);
+      sentences.forEach((s, i) => {
+        console.log(`Sentence ${i + 1}: ${s.substring(0, 80)}...`);
+      });
+      
+      return sentences;
+    };
     
-    // Split by sentence-ending punctuation
-    // Using positive lookbehind to keep punctuation with sentences
-    const sentences = text
-      .split(splitRegex)
-      .map(s => s.trim())
-      .filter(s => s.length > 0);
+    const sentences = smartSplit(text, language);
+    
+    console.log('\n=== FINAL RESULT ===');
+    console.log('Sentences count:', sentences.length);
     
     return { success: true, sentences, language };
   } catch (error) {
+    console.error('Error in split-text:', error);
     return { success: false, error: error.message };
   }
 });

@@ -855,8 +855,11 @@ function clearTTSForm(provider) {
   hideMissingFilesSection(provider);
 }
 
-// Global variable to store missing files info
-let missingFilesData = null;
+// Global variable to store missing files info per provider
+let missingFilesData = {
+  genai: null,
+  ai33: null
+};
 
 // Check for missing SRT files only (GENAI Labs only)
 async function checkMissingSrt(provider) {
@@ -913,7 +916,7 @@ async function checkMissingSrt(provider) {
     };
 
     // Store result for retry
-    missingFilesData = {
+    missingFilesData[provider] = {
       provider,
       sentences,
       outputDir,
@@ -996,7 +999,7 @@ async function checkMissingFiles(provider) {
     };
 
     // Store result for retry
-    missingFilesData = {
+    missingFilesData[provider] = {
       provider,
       sentences,
       outputDir,
@@ -1228,43 +1231,53 @@ async function joinVoices(provider) {
 
 // Retry missing MP3 files
 async function retryMissingVoices(provider) {
-  console.log(`[${provider}] retryMissingVoices called`);
-  console.log(`[${provider}] missingFilesData:`, missingFilesData);
+  console.log(`[DEBUG] ========== RETRY MISSING VOICES START ==========`);
+  console.log(`[DEBUG] Provider:`, provider);
+  console.log(`[DEBUG] missingFilesData[${provider}]:`, missingFilesData[provider]);
 
-  if (!missingFilesData) {
+  if (!missingFilesData[provider]) {
     const msg = `No missing files data available.\n\nPlease follow these steps:\n1. Enter text in the text area\n2. Click "Check Missing MP3" button\n3. Then click "Retry Missing Voices" button`;
+    console.error(`[DEBUG] Missing files data is null/undefined`);
     alert(msg);
     return;
   }
 
   // Use provider from stored data if not passed
   if (!provider) {
-    provider = missingFilesData.provider || 'genai';
+    provider = missingFilesData[provider]?.provider || 'genai';
+    console.log(`[DEBUG] Provider not passed, using stored provider:`, provider);
   }
 
-  const { result } = missingFilesData;
-  console.log(`[${provider}] result:`, result);
+  const providerData = missingFilesData[provider];
+  const { result } = providerData;
+  console.log(`[DEBUG] Result object:`, result);
 
   // Check if MP3 data exists (might be null if only SRT was checked)
   if (!result.mp3) {
+    console.error(`[DEBUG] result.mp3 is null/undefined`);
     alert('No MP3 check data available. Please run "Check Missing MP3" first.');
     return;
   }
 
   const hasMissingMp3 = result.mp3.missing > 0;
-  console.log(`[${provider}] hasMissingMp3:`, hasMissingMp3, 'missing count:', result.mp3.missing);
+  console.log(`[DEBUG] hasMissingMp3:`, hasMissingMp3, '| missing count:', result.mp3.missing);
 
   if (!hasMissingMp3) {
+    console.log(`[DEBUG] No missing MP3 files`);
     alert('No missing MP3 files to retry!');
     return;
   }
 
-  if (!confirm(`This will retry generating ${result.mp3.missing} missing MP3 files. Continue?`)) {
-    console.log(`[${provider}] User cancelled retry`);
+  console.log(`[DEBUG] About to show confirm dialog...`);
+  const userConfirmed = confirm(`This will retry generating ${result.mp3.missing} missing MP3 files. Continue?`);
+  console.log(`[DEBUG] User confirmed:`, userConfirmed);
+  
+  if (!userConfirmed) {
+    console.log(`[DEBUG] User cancelled retry`);
     return;
   }
 
-  console.log(`[${provider}] User confirmed retry, proceeding...`);
+  console.log(`[DEBUG] User confirmed, proceeding with retry...`);
 
   // Hide missing files section
   hideMissingFilesSection(provider);
@@ -1275,7 +1288,7 @@ async function retryMissingVoices(provider) {
   const model = document.getElementById(`${provider}-model`).value.trim();
   const ngrokUrl = document.getElementById(`${provider}-ngrok-url`).value.trim();
   const apiType = document.getElementById(`${provider}-api-type`).value;
-  const { outputDir } = missingFilesData;
+  const { outputDir } = providerData;
 
   console.log(`[${provider}] Retry config:`, { apiKey: apiKey ? 'SET' : 'NOT SET', voiceId, model, ngrokUrl, apiType, outputDir });
 
@@ -1452,7 +1465,7 @@ async function retryMissingVoices(provider) {
       addLog(`${provider}-log`, '🔍 Verifying all MP3 files are present...', 'info');
 
       try {
-        const { sentences } = missingFilesData;
+        const { sentences } = providerData;
         const verifyResult = await ipcRenderer.invoke('check-missing-files', {
           sentences,
           outputDir
@@ -1525,49 +1538,76 @@ async function retryMissingVoices(provider) {
 
 // Retry missing SRT files
 async function retryMissingSrt(provider) {
-  if (!missingFilesData) {
+  console.log(`[DEBUG] ========== RETRY MISSING SRT START ==========`);
+  console.log(`[DEBUG] Provider:`, provider);
+  console.log(`[DEBUG] missingFilesData[${provider}]:`, missingFilesData[provider]);
+
+  if (!missingFilesData[provider]) {
+    console.error(`[DEBUG] Missing files data is null/undefined for provider:`, provider);
     alert('No missing files data available. Please run "Check Missing Files" first.');
     return;
   }
 
   // Use provider from stored data if not passed
   if (!provider) {
-    provider = missingFilesData.provider || 'genai';
+    provider = missingFilesData[provider]?.provider || 'genai';
+    console.log(`[DEBUG] Provider not passed, using stored provider:`, provider);
   }
 
-  const { result } = missingFilesData;
+  const providerData = missingFilesData[provider];
+  const { result } = providerData;
+  console.log(`[DEBUG] Result object:`, result);
+
   const hasMissingSrt = result.srt && result.srt.missing > 0;
+  console.log(`[DEBUG] hasMissingSrt:`, hasMissingSrt, '| missing count:', result.srt?.missing);
 
   if (!hasMissingSrt) {
+    console.log(`[DEBUG] No missing SRT files`);
     alert('No missing SRT files to retry!');
     return;
   }
 
   const apiType = document.getElementById(`${provider}-api-type`).value;
+  console.log(`[DEBUG] API Type:`, apiType);
 
   if (provider !== 'genai' || apiType !== 'labs') {
+    console.log(`[DEBUG] SRT only available for GENAI Labs - provider:`, provider, 'apiType:', apiType);
     alert('SRT download is only available for GENAI Labs API!');
     return;
   }
 
-  if (!confirm(`This will retry downloading ${result.srt.missing} missing SRT files. Continue?`)) {
+  console.log(`[DEBUG] About to show confirm dialog...`);
+  const userConfirmed = confirm(`This will retry downloading ${result.srt.missing} missing SRT files. Continue?`);
+  console.log(`[DEBUG] User confirmed:`, userConfirmed);
+
+  if (!userConfirmed) {
+    console.log(`[DEBUG] User cancelled retry`);
     return;
   }
+
+  console.log(`[DEBUG] User confirmed, proceeding with retry...`);
 
   // Hide missing files section
   hideMissingFilesSection(provider);
 
   const apiKey = document.getElementById(`${provider}-api-key`).value.trim();
-  const { outputDir } = missingFilesData;
+  const { outputDir } = providerData;
+
+  console.log(`[DEBUG] Retry config:`, { apiKey: apiKey ? 'SET' : 'NOT SET', outputDir });
 
   if (!apiKey) {
+    console.error(`[DEBUG] API key not set!`);
     alert('Please enter your API key');
     return;
   }
 
+  console.log(`[DEBUG] Starting retry process...`);
+
   ttsProcessing[provider] = true;
   clearLog(`${provider}-log`);
   updateProgress(`${provider}-progress-bar`, 0);
+
+  console.log(`[DEBUG] Set ttsProcessing to true, cleared log, reset progress`);
 
   try {
     addLog(`${provider}-log`, '═══════════════════════════', 'info');
@@ -1575,6 +1615,8 @@ async function retryMissingSrt(provider) {
     addLog(`${provider}-log`, '═══════════════════════════', 'info');
 
     const missingSrtSegments = result.srt.missingList;
+    console.log(`[DEBUG] Missing SRT segments:`, missingSrtSegments);
+
     addLog(`${provider}-log`, `📝 Found ${missingSrtSegments.length} missing SRT files`, 'info');
     addLog(`${provider}-log`, `📁 Output directory: ${outputDir}`, 'info');
 
@@ -1620,7 +1662,10 @@ async function retryMissingSrt(provider) {
       const { segmentNumber } = item;
       const taskId = taskIdMap.get(segmentNumber.toString());
 
+      console.log(`[DEBUG] [${segmentNumber}] Processing SRT - taskId:`, taskId);
+
       if (!taskId) {
+        console.log(`[DEBUG] [${segmentNumber}] No taskId found, skipping`);
         addLog(`${provider}-log`, `⏭️ [${segmentNumber}] Skipping - no taskId available`, 'warning');
         srtSkipped++;
         processedCount++;
@@ -1629,12 +1674,15 @@ async function retryMissingSrt(provider) {
       }
 
       try {
+        console.log(`[DEBUG] [${segmentNumber}] Requesting subtitle from API...`);
         addLog(`${provider}-log`, `🔄 [${segmentNumber}] RETRY SRT - Requesting subtitle from task: ${taskId}`, 'info');
 
         const requestResult = await ipcRenderer.invoke('request-subtitle', {
           taskId,
           apiKey
         });
+
+        console.log(`[DEBUG] [${segmentNumber}] Request result:`, requestResult);
 
         if (requestResult.success) {
           addLog(`${provider}-log`, `✅ [${segmentNumber}] Subtitle request sent successfully`, 'success');
@@ -1736,7 +1784,7 @@ async function retryMissingSrt(provider) {
       addLog(`${provider}-log`, '🔍 Verifying all SRT files are present...', 'info');
 
       try {
-        const { sentences } = missingFilesData;
+        const { sentences } = providerData;
         const verifyResult = await ipcRenderer.invoke('check-missing-srt', {
           sentences,
           outputDir
@@ -1783,7 +1831,7 @@ function hideMissingFilesSection(provider) {
   if (section) {
     section.style.display = 'none';
   }
-  missingFilesData = null;
+  missingFilesData[provider] = null;
 }
 
 // Listen for TTS progress updates
@@ -2554,6 +2602,9 @@ function loadSettings() {
 
 // Load settings on startup
 window.addEventListener('DOMContentLoaded', () => {
+  console.log('[APP INIT] DOMContentLoaded event fired');
+  console.log('[APP INIT] Checking if retryMissingVoices function exists:', typeof retryMissingVoices);
+  console.log('[APP INIT] Window functions:', Object.keys(window).filter(k => k.includes('retry')));
   loadSettings();
 });
 
@@ -3410,29 +3461,49 @@ async function retryFailedPrompts() {
     return;
   }
 
-  hideFailedPromptsSection();
-
-  addLog('t2v-log', '🔄 Retrying failed prompts...', 'info');
-
-  // Show retry statistics per account
-  let totalErrors = 0;
-  for (const [account, tasks] of Object.entries(t2vTasksData)) {
-    if (Array.isArray(tasks)) {
-      const failedTasks = tasks.filter(t => t.status === 'error');
-      const pendingTasks = tasks.filter(t => t.status === 'pending');
-      if (failedTasks.length > 0 || pendingTasks.length > 0) {
-        addLog('t2v-log', `👤 [${account}] Errors: ${failedTasks.length} | Pending: ${pendingTasks.length}`, 'info');
-        totalErrors += failedTasks.length;
-      }
-    }
-  }
-
-  if (totalErrors === 0) {
-    addLog('t2v-log', '✅ No failed prompts to retry!', 'success');
+  // Get failed prompts list from the UI
+  const failedSection = document.getElementById('t2v-failed-section');
+  const failedList = document.getElementById('t2v-failed-list');
+  
+  if (!failedList || failedList.children.length === 0) {
+    alert('No failed prompts to retry');
     return;
   }
 
-  addLog('t2v-log', `📊 Total errors to retry: ${totalErrors}`, 'info');
+  // Extract failed prompts from the failed list section
+  const failedPrompts = [];
+  const failedItems = failedList.querySelectorAll('.failed-prompt-item');
+  
+  failedItems.forEach(item => {
+    const text = item.textContent || item.innerText;
+    // Extract prompt text (remove the #index prefix and "Video file not found" message)
+    const match = text.match(/#(\d+):\s*(.+?)(?:\s*Video file not found:|$)/s);
+    if (match) {
+      const index = parseInt(match[1]);
+      const promptText = match[2].trim();
+      failedPrompts.push({
+        index: index,
+        text: promptText,
+        status: 'pending'
+      });
+    }
+  });
+
+  if (failedPrompts.length === 0) {
+    alert('No valid failed prompts found');
+    return;
+  }
+
+  hideFailedPromptsSection();
+
+  addLog('t2v-log', '🔄 Retrying failed prompts...', 'info');
+  addLog('t2v-log', `📊 Total prompts to retry: ${failedPrompts.length}`, 'info');
+
+  // Check if we have accounts configured
+  if (t2vAccounts.length === 0) {
+    alert('Please add at least one account first');
+    return;
+  }
 
   t2vProcessing = true;
   t2vCancelled = false;
@@ -3440,26 +3511,31 @@ async function retryFailedPrompts() {
   document.getElementById('start-t2v-btn').disabled = true;
   document.getElementById('stop-t2v-btn').style.display = 'inline-block';
 
-  // Process only failed tasks
-  const accountPromises = [];
+  // Redistribute failed prompts to accounts (like in startT2VProcessing)
+  t2vTasksData = distributePrompts(failedPrompts.map(p => p.text), t2vAccounts);
 
+  // Log distribution
   for (const [account, tasks] of Object.entries(t2vTasksData)) {
-    if (Array.isArray(tasks)) {
-      const failedTasks = tasks.filter(t => t.status === 'error');
-      if (failedTasks.length > 0) {
-        // Get current retry attempt from tasks (increment by 1 for this retry)
-        const currentRetryAttempt = (tasks.retryAttempt || 0) + 1;
-        accountPromises.push(retryAccountFailedTasks(account, failedTasks, baseUrl, apiKey, aspectRatio, outputDir, currentRetryAttempt));
-      }
-    }
+    addLog('t2v-log', `👤 ${account}: ${tasks.length} prompts`, 'info');
   }
+
+  // Show status section
+  document.getElementById('t2v-status').style.display = 'block';
+  renderAccountsStatus();
+
+  // Process all accounts concurrently (same as startT2VProcessing)
+  const accountPromises = t2vAccounts.map(account => 
+    processAccountPrompts(account, baseUrl, apiKey, aspectRatio, outputDir)
+  );
 
   try {
     await Promise.all(accountPromises);
 
     if (!t2vCancelled) {
       addLog('t2v-log', '✅ Retry completed!', 'success');
-      showFailedPrompts();  // Show remaining failures
+      showFailedPrompts();  // Show remaining failures if any
+    } else {
+      addLog('t2v-log', '⏹️ Retry stopped by user', 'warning');
     }
   } catch (error) {
     addLog('t2v-log', `❌ Retry error: ${error.message}`, 'error');
@@ -3701,6 +3777,99 @@ function clearT2VForm() {
   document.getElementById('t2v-failed-section').style.display = 'none';
 
   t2vTasksData = {};
+}
+
+// Check missing prompts (video files not found in output directory)
+async function checkT2VMissingPrompts() {
+  const outputDir = document.getElementById('t2v-output-dir').value.trim();
+  const promptsText = document.getElementById('t2v-prompts').value.trim();
+
+  if (!outputDir) {
+    alert('Please select output directory first');
+    return;
+  }
+
+  if (!promptsText) {
+    alert('Please enter prompts to check');
+    return;
+  }
+
+  addLog('t2v-log', '🔍 Checking for missing videos...', 'info');
+
+  const fs = require('fs');
+  const path = require('path');
+  
+  // Parse prompts from textarea
+  const prompts = promptsText.split('\n').map(p => p.trim()).filter(p => p.length > 0);
+  
+  if (prompts.length === 0) {
+    alert('No valid prompts found');
+    return;
+  }
+
+  addLog('t2v-log', `📊 Total prompts to check: ${prompts.length}`, 'info');
+
+  const missingPrompts = [];
+  const foundPrompts = [];
+
+  // Check each prompt
+  for (let i = 0; i < prompts.length; i++) {
+    const promptText = prompts[i];
+    const promptIndex = i + 1;
+    
+    // Generate expected filename (sanitized prompt text)
+    const baseName = sanitizeFilename(promptText);
+    const fileName = `${baseName}.mp4`;
+    const filePath = path.join(outputDir, fileName);
+
+    try {
+      await fs.promises.access(filePath);
+      // File exists
+      foundPrompts.push({
+        index: promptIndex,
+        text: promptText,
+        file: fileName
+      });
+      addLog('t2v-log', `✅ #${promptIndex}: Found ${fileName}`, 'success');
+    } catch {
+      // File doesn't exist
+      missingPrompts.push({
+        index: promptIndex,
+        text: promptText,
+        expectedFile: fileName,
+        status: 'pending'
+      });
+    }
+  }
+
+  if (missingPrompts.length === 0) {
+    addLog('t2v-log', `✅ All ${prompts.length} prompts have corresponding videos!`, 'success');
+    alert(`All ${prompts.length} prompts have corresponding videos!`);
+  } else {
+    addLog('t2v-log', `⚠️ Found ${missingPrompts.length}/${prompts.length} prompts without videos`, 'warning');
+    addLog('t2v-log', `✅ Found ${foundPrompts.length} existing videos`, 'info');
+
+    // Show missing prompts in failed section
+    const section = document.getElementById('t2v-failed-section');
+    const summary = document.getElementById('t2v-failed-summary');
+    const list = document.getElementById('t2v-failed-list');
+
+    summary.innerHTML = `
+      <p><strong>⚠️ ${missingPrompts.length}/${prompts.length} prompts missing videos</strong></p>
+      <p style="color: #27ae60;">✅ ${foundPrompts.length} videos found</p>
+    `;
+
+    list.innerHTML = missingPrompts.map(task => `
+      <div class="failed-prompt-item">
+        <strong>#${task.index}</strong>: ${task.text}
+        <br><small style="color: #f39c12;">Video file not found: ${task.expectedFile}</small>
+      </div>
+    `).join('');
+
+    section.style.display = 'block';
+
+    alert(`Found ${missingPrompts.length} prompts without videos.\nFound ${foundPrompts.length} existing videos.\n\nCheck the "Failed Prompts" section below for details.`);
+  }
 }
 
 // ===========================
