@@ -1260,6 +1260,39 @@ h3 {
   border-radius: 4px;
 }
 
+/* No Audio Videos Section */
+.no-audio-item {
+  background: #1a1a2e;
+  transition: all 0.3s;
+}
+
+.no-audio-item:hover {
+  background: #16213e;
+  border-color: #667eea;
+}
+
+.no-audio-prompt-input {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  line-height: 1.4;
+}
+
+.no-audio-prompt-input:focus {
+  outline: none;
+  border-color: #667eea !important;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.3);
+}
+
+#t2v-no-audio-section .button-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+#t2v-no-audio-section .button-group button {
+  flex: 1;
+  min-width: 120px;
+}
+
 /* Responsive for T2V */
 @media (max-width: 768px) {
   .t2v-config-grid {

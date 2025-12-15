@@ -923,6 +923,12 @@
             </button>
             <button
               class="secondary-button"
+              onclick="checkT2VVideosNoAudio()"
+            >
+              🔇 Check No Audio
+            </button>
+            <button
+              class="secondary-button"
               onclick="downloadGeneratedVideos()"
             >
               📥 Download Generated Videos
@@ -964,6 +970,39 @@
               <button
                 class="secondary-button"
                 onclick="hideFailedPromptsSection()"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+
+          <!-- Videos No Audio Section -->
+          <div
+            id="t2v-no-audio-section"
+            class="missing-files-section"
+            style="display: none"
+          >
+            <h3>🔇 Videos Without Audio</h3>
+            <div id="t2v-no-audio-summary" class="summary-box"></div>
+            <div id="t2v-no-audio-list" class="failed-prompts-list" style="max-height: 400px; overflow-y: auto;">
+              <!-- Videos without audio will be listed here with editable prompts -->
+            </div>
+            <div class="button-group" style="margin-top: 15px">
+              <button class="primary-button" onclick="retryNoAudioVideos()">
+                🔄 Retry All Selected
+              </button>
+              <button class="secondary-button" onclick="selectAllNoAudioVideos()">
+                ☑️ Select All
+              </button>
+              <button class="secondary-button" onclick="deselectAllNoAudioVideos()">
+                ☐ Deselect All
+              </button>
+              <button class="secondary-button" onclick="clearAudioCheckCache()" title="Clear cached audio check results">
+                🗑️ Clear Cache
+              </button>
+              <button
+                class="secondary-button"
+                onclick="hideNoAudioSection()"
               >
                 Close
               </button>

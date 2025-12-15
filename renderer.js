@@ -3872,6 +3872,372 @@ async function checkT2VMissingPrompts() {
   }
 }
 
+// Global storage for videos without audio
+let videosNoAudioData = [];
+
+// Audio check cache management
+const audioCheckCache = {
+  // Get cache key based on file path and modification time
+  getCacheKey(filePath) {
+    return `audio_check_${filePath.replace(/[\\/:*?"<>|]/g, '_')}`;
+  },
+  
+  // Get cached result
+  get(filePath) {
+    try {
+      const key = this.getCacheKey(filePath);
+      const cached = localStorage.getItem(key);
+      if (cached) {
+        return JSON.parse(cached);
+      }
+    } catch (e) {
+      console.error('Error reading audio cache:', e);
+    }
+    return null;
+  },
+  
+  // Set cached result
+  set(filePath, hasAudio) {
+    try {
+      const key = this.getCacheKey(filePath);
+      const data = {
+        hasAudio,
+        checkedAt: Date.now()
+      };
+      localStorage.setItem(key, JSON.stringify(data));
+    } catch (e) {
+      console.error('Error saving audio cache:', e);
+    }
+  },
+  
+  // Remove from cache (when file is regenerated)
+  remove(filePath) {
+    try {
+      const key = this.getCacheKey(filePath);
+      localStorage.removeItem(key);
+    } catch (e) {
+      console.error('Error removing audio cache:', e);
+    }
+  },
+  
+  // Clear all audio cache
+  clearAll() {
+    try {
+      const keysToRemove = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('audio_check_')) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach(key => localStorage.removeItem(key));
+      return keysToRemove.length;
+    } catch (e) {
+      console.error('Error clearing audio cache:', e);
+      return 0;
+    }
+  }
+};
+
+// Check videos without audio track (with caching)
+async function checkT2VVideosNoAudio() {
+  const outputDir = document.getElementById('t2v-output-dir').value.trim();
+  const promptsText = document.getElementById('t2v-prompts').value.trim();
+
+  if (!outputDir) {
+    alert('Please select output directory first');
+    return;
+  }
+
+  if (!promptsText) {
+    alert('Please enter prompts to check');
+    return;
+  }
+
+  addLog('t2v-log', '🔇 Checking videos for audio tracks...', 'info');
+
+  const path = require('path');
+  
+  // Parse prompts from textarea
+  const prompts = promptsText.split('\n').map(p => p.trim()).filter(p => p.length > 0);
+  
+  if (prompts.length === 0) {
+    alert('No valid prompts found');
+    return;
+  }
+
+  addLog('t2v-log', `📊 Total prompts to check: ${prompts.length}`, 'info');
+
+  // First, find all existing video files
+  const existingVideos = [];
+  for (let i = 0; i < prompts.length; i++) {
+    const promptText = prompts[i];
+    const baseName = sanitizeFilename(promptText);
+    const fileName = `${baseName}.mp4`;
+    const filePath = path.join(outputDir, fileName);
+
+    try {
+      await fs.access(filePath);
+      existingVideos.push({
+        index: i + 1,
+        text: promptText,
+        file: fileName,
+        filePath: filePath
+      });
+    } catch {
+      // File doesn't exist, skip
+    }
+  }
+
+  if (existingVideos.length === 0) {
+    addLog('t2v-log', '⚠️ No video files found in output directory', 'warning');
+    alert('No video files found in output directory');
+    return;
+  }
+
+  addLog('t2v-log', `📁 Found ${existingVideos.length} video files, checking audio tracks...`, 'info');
+
+  // Separate videos into cached and uncached
+  const cachedResults = [];
+  const uncachedVideos = [];
+  
+  for (const video of existingVideos) {
+    const cached = audioCheckCache.get(video.filePath);
+    if (cached) {
+      cachedResults.push({
+        path: video.filePath,
+        hasAudio: cached.hasAudio,
+        fromCache: true
+      });
+    } else {
+      uncachedVideos.push(video);
+    }
+  }
+
+  addLog('t2v-log', `💾 Cache hit: ${cachedResults.length} | Need to check: ${uncachedVideos.length}`, 'info');
+
+  // Check audio only for uncached videos
+  let newResults = [];
+  if (uncachedVideos.length > 0) {
+    const videoPaths = uncachedVideos.map(v => v.filePath);
+    const audioCheckResult = await ipcRenderer.invoke('check-videos-audio-batch', { videoPaths });
+
+    if (!audioCheckResult.success) {
+      addLog('t2v-log', `❌ Error checking audio: ${audioCheckResult.error}`, 'error');
+      return;
+    }
+
+    newResults = audioCheckResult.results;
+    
+    // Save new results to cache
+    for (const result of newResults) {
+      audioCheckCache.set(result.path, result.hasAudio);
+    }
+    
+    addLog('t2v-log', `💾 Saved ${newResults.length} new results to cache`, 'info');
+  }
+
+  // Combine cached and new results
+  const allResults = [...cachedResults, ...newResults];
+
+  // Find videos without audio
+  const videosNoAudio = [];
+  const videosWithAudio = [];
+
+  for (const video of existingVideos) {
+    const audioResult = allResults.find(r => r.path === video.filePath);
+    if (audioResult && !audioResult.hasAudio) {
+      videosNoAudio.push(video);
+    } else {
+      videosWithAudio.push(video);
+    }
+  }
+
+  addLog('t2v-log', `✅ Videos with audio: ${videosWithAudio.length}`, 'success');
+  addLog('t2v-log', `🔇 Videos without audio: ${videosNoAudio.length}`, videosNoAudio.length > 0 ? 'warning' : 'success');
+
+  if (videosNoAudio.length === 0) {
+    alert(`All ${existingVideos.length} videos have audio tracks!`);
+    return;
+  }
+
+  // Store for retry
+  videosNoAudioData = videosNoAudio;
+
+  // Show UI section with editable prompts
+  showNoAudioVideosSection(videosNoAudio, existingVideos.length);
+}
+
+// Show videos without audio section with editable prompts
+function showNoAudioVideosSection(videosNoAudio, totalVideos) {
+  const section = document.getElementById('t2v-no-audio-section');
+  const summary = document.getElementById('t2v-no-audio-summary');
+  const list = document.getElementById('t2v-no-audio-list');
+
+  summary.innerHTML = `
+    <p><strong>🔇 ${videosNoAudio.length}/${totalVideos} videos without audio</strong></p>
+    <p style="color: #e74c3c;">These videos need to be regenerated</p>
+    <p style="color: #888; font-size: 0.9em;">Edit prompts below if needed, then click Retry</p>
+  `;
+
+  list.innerHTML = videosNoAudio.map((video, idx) => `
+    <div class="no-audio-item" data-index="${idx}" style="margin-bottom: 15px; padding: 10px; border: 1px solid #444; border-radius: 8px;">
+      <div style="display: flex; align-items: center; margin-bottom: 8px;">
+        <input type="checkbox" id="no-audio-select-${idx}" checked style="margin-right: 10px; width: 18px; height: 18px;">
+        <strong style="color: #e74c3c;">#${video.index}</strong>
+        <span style="margin-left: 10px; color: #888; font-size: 0.85em;">${video.file}</span>
+      </div>
+      <textarea 
+        id="no-audio-prompt-${idx}" 
+        class="no-audio-prompt-input"
+        style="width: 100%; min-height: 80px; padding: 8px; border-radius: 4px; border: 1px solid #555; background: #2a2a2a; color: #fff; font-size: 0.9em; resize: vertical;"
+      >${escapeHtml(video.text)}</textarea>
+    </div>
+  `).join('');
+
+  section.style.display = 'block';
+  section.scrollIntoView({ behavior: 'smooth' });
+}
+
+// Escape HTML for safe display
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// Hide no audio section
+function hideNoAudioSection() {
+  document.getElementById('t2v-no-audio-section').style.display = 'none';
+}
+
+// Clear audio check cache
+function clearAudioCheckCache() {
+  const count = audioCheckCache.clearAll();
+  addLog('t2v-log', `🗑️ Cleared ${count} cached audio check results`, 'info');
+  alert(`Cleared ${count} cached audio check results.\n\nNext check will re-scan all videos.`);
+}
+
+// Select all no audio videos
+function selectAllNoAudioVideos() {
+  for (let i = 0; i < videosNoAudioData.length; i++) {
+    const checkbox = document.getElementById(`no-audio-select-${i}`);
+    if (checkbox) checkbox.checked = true;
+  }
+}
+
+// Deselect all no audio videos
+function deselectAllNoAudioVideos() {
+  for (let i = 0; i < videosNoAudioData.length; i++) {
+    const checkbox = document.getElementById(`no-audio-select-${i}`);
+    if (checkbox) checkbox.checked = false;
+  }
+}
+
+// Retry videos without audio with edited prompts
+async function retryNoAudioVideos() {
+  const baseUrl = document.getElementById('t2v-base-url').value.trim();
+  const apiKey = document.getElementById('t2v-api-key').value.trim();
+  const outputDir = document.getElementById('t2v-output-dir').value.trim();
+  const aspectRatio = document.getElementById('t2v-aspect-ratio').value;
+
+  if (!baseUrl || !apiKey || !outputDir) {
+    alert('Please check configuration (Base URL, API Key, Output Directory)');
+    return;
+  }
+
+  if (t2vAccounts.length === 0) {
+    alert('Please add at least one account first');
+    return;
+  }
+
+  // Collect selected prompts with edited text
+  const selectedPrompts = [];
+  for (let i = 0; i < videosNoAudioData.length; i++) {
+    const checkbox = document.getElementById(`no-audio-select-${i}`);
+    const promptInput = document.getElementById(`no-audio-prompt-${i}`);
+    
+    if (checkbox && checkbox.checked && promptInput) {
+      const editedText = promptInput.value.trim();
+      if (editedText) {
+        selectedPrompts.push({
+          originalIndex: videosNoAudioData[i].index,
+          text: editedText,
+          originalFile: videosNoAudioData[i].file
+        });
+      }
+    }
+  }
+
+  if (selectedPrompts.length === 0) {
+    alert('Please select at least one video to retry');
+    return;
+  }
+
+  // Confirm retry
+  const confirmMsg = `Retry ${selectedPrompts.length} video(s) without audio?\n\nThis will regenerate the selected videos with the edited prompts.`;
+  if (!confirm(confirmMsg)) {
+    return;
+  }
+
+  hideNoAudioSection();
+
+  addLog('t2v-log', `🔄 Retrying ${selectedPrompts.length} videos without audio...`, 'info');
+
+  // Delete old files first and clear their cache
+  const path = require('path');
+  for (const prompt of selectedPrompts) {
+    try {
+      const oldFilePath = path.join(outputDir, prompt.originalFile);
+      await fs.unlink(oldFilePath);
+      audioCheckCache.remove(oldFilePath); // Remove from cache
+      addLog('t2v-log', `🗑️ Deleted old file: ${prompt.originalFile}`, 'info');
+    } catch (err) {
+      // File might already be deleted, ignore
+    }
+  }
+
+  t2vProcessing = true;
+  t2vCancelled = false;
+
+  document.getElementById('start-t2v-btn').disabled = true;
+  document.getElementById('stop-t2v-btn').style.display = 'inline-block';
+
+  // Redistribute prompts to accounts
+  t2vTasksData = distributePrompts(selectedPrompts.map(p => p.text), t2vAccounts);
+
+  // Log distribution
+  for (const [account, tasks] of Object.entries(t2vTasksData)) {
+    addLog('t2v-log', `👤 ${account}: ${tasks.length} prompts`, 'info');
+  }
+
+  // Show status section
+  document.getElementById('t2v-status').style.display = 'block';
+  renderAccountsStatus();
+
+  // Process all accounts concurrently
+  const accountPromises = t2vAccounts.map(account => 
+    processAccountPrompts(account, baseUrl, apiKey, aspectRatio, outputDir)
+  );
+
+  try {
+    await Promise.all(accountPromises);
+
+    if (!t2vCancelled) {
+      addLog('t2v-log', '✅ Retry completed!', 'success');
+      showFailedPrompts();
+    } else {
+      addLog('t2v-log', '⏹️ Retry stopped by user', 'warning');
+    }
+  } catch (error) {
+    addLog('t2v-log', `❌ Retry error: ${error.message}`, 'error');
+  } finally {
+    t2vProcessing = false;
+    document.getElementById('start-t2v-btn').disabled = false;
+    document.getElementById('stop-t2v-btn').style.display = 'none';
+  }
+}
+
 // ===========================
 // T2V IO Functions
 // ===========================

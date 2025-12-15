@@ -718,6 +718,80 @@ ipcMain.handle('select-files', async (event, options) => {
   return { success: true, paths: result.filePaths };
 });
 
+// Check if video file has audio track using ffprobe
+ipcMain.handle('check-video-has-audio', async (event, filePath) => {
+  return new Promise((resolve) => {
+    const ffprobe = spawn('ffprobe', [
+      '-v', 'error',
+      '-select_streams', 'a:0',
+      '-show_entries', 'stream=codec_type',
+      '-of', 'csv=p=0',
+      filePath
+    ]);
+
+    let output = '';
+    let errorOutput = '';
+    
+    ffprobe.stdout.on('data', (data) => {
+      output += data.toString();
+    });
+    
+    ffprobe.stderr.on('data', (data) => {
+      errorOutput += data.toString();
+    });
+
+    ffprobe.on('close', (code) => {
+      // If output contains 'audio', the video has audio track
+      const hasAudio = output.trim().toLowerCase().includes('audio');
+      resolve({ success: true, hasAudio, output: output.trim() });
+    });
+
+    ffprobe.on('error', (err) => {
+      resolve({ success: false, hasAudio: false, error: err.message });
+    });
+  });
+});
+
+// Check multiple videos for audio (batch)
+ipcMain.handle('check-videos-audio-batch', async (event, { videoPaths }) => {
+  const results = [];
+  
+  for (const videoPath of videoPaths) {
+    try {
+      const result = await new Promise((resolve) => {
+        const ffprobe = spawn('ffprobe', [
+          '-v', 'error',
+          '-select_streams', 'a:0',
+          '-show_entries', 'stream=codec_type',
+          '-of', 'csv=p=0',
+          videoPath
+        ]);
+
+        let output = '';
+        
+        ffprobe.stdout.on('data', (data) => {
+          output += data.toString();
+        });
+
+        ffprobe.on('close', (code) => {
+          const hasAudio = output.trim().toLowerCase().includes('audio');
+          resolve({ path: videoPath, hasAudio });
+        });
+
+        ffprobe.on('error', (err) => {
+          resolve({ path: videoPath, hasAudio: false, error: err.message });
+        });
+      });
+      
+      results.push(result);
+    } catch (error) {
+      results.push({ path: videoPath, hasAudio: false, error: error.message });
+    }
+  }
+  
+  return { success: true, results };
+});
+
 // Get audio duration using ffprobe
 ipcMain.handle('get-audio-duration', async (event, filePath) => {
   return new Promise((resolve, reject) => {
